@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Standalone preflight tool. Loads the built GhostSpectator plugin DLL and
+    runs PatchValidator.Validate() against the game's actual Managed/ DLLs,
+    so release.sh can fail fast when a PEAK update breaks a patch target
+    without needing to boot the game.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>GhostSpectator.PatchValidatorCli</AssemblyName>
+    <RootNamespace>GhostSpectator.Tools</RootNamespace>
+    <IsThunderstorePackable>false</IsThunderstorePackable>
+    <DeployModFiles>false</DeployModFiles>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\GhostSpectator\GhostSpectator.csproj" />
+  </ItemGroup>
+
+</Project>

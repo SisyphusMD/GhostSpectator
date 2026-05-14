@@ -1,0 +1,5 @@
+# Sponsor button shown at the top of the repository page on Forgejo.
+# Forgejo checks .forgejo/ then .gitea/ then .github/ in that order, so this
+# file takes priority on Forgejo instances; .github/FUNDING.yml covers the
+# GitHub mirror with the same content.
+buy_me_a_coffee: sisyphusmd

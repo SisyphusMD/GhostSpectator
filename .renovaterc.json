@@ -1,0 +1,95 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "gitAuthor": "Renovate Bot <renovate@bryantserver.local>",
+  "assignees": ["cody"],
+  "prConcurrentLimit": 0,
+  "prHourlyLimit": 0,
+  "separateMinorPatch": true,
+  "fetchChangeLogs": "pr",
+  "enabledManagers": ["nuget", "github-actions", "dotnet-version", "custom.regex"],
+  "includePaths": [
+    "src/**/*.csproj",
+    "Directory.Build.props",
+    "Directory.Build.targets",
+    ".forgejo/workflows/**/*.yml",
+    ".forgejo/workflows/**/*.yaml",
+    "global.json",
+    "thunderstore.toml"
+  ],
+  "github-actions": {
+    "managerFilePatterns": ["/\\.forgejo/workflows/.+\\.ya?ml$/"]
+  },
+  "customDatasources": {
+    "thunderstore": {
+      "defaultRegistryUrlTemplate": "https://thunderstore.io/api/experimental/package/{{packageName}}/",
+      "format": "json",
+      "transformTemplates": [
+        "{ \"releases\": [{ \"version\": latest.version_number }] }"
+      ]
+    }
+  },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Track tcli version embedded in shell commands inside workflow files",
+      "managerFilePatterns": ["/\\.forgejo/workflows/.+\\.ya?ml$/"],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>.*?) depName=(?<depName>.*?)\\s+run: .*--version (?<currentValue>\\S+)"
+      ]
+    },
+    {
+      "customType": "regex",
+      "description": "Track Thunderstore deps in csproj and thunderstore.toml",
+      "managerFilePatterns": [
+        "/src/.+\\.csproj$/",
+        "/thunderstore\\.toml$/"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>.*?) depName=(?<depName>.*?)\\s+.*?(?:Version=\"|= \")(?<currentValue>[^\"]+)\""
+      ]
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "NuGet packages",
+      "matchDatasources": ["nuget"],
+      "addLabels": ["nuget"]
+    },
+    {
+      "description": "GitHub/Forgejo Actions",
+      "matchManagers": ["github-actions"],
+      "addLabels": ["github-actions"]
+    },
+    {
+      "description": ".NET SDK in global.json",
+      "matchManagers": ["dotnet-version"],
+      "addLabels": ["dotnet-sdk"]
+    },
+    {
+      "description": "Thunderstore deps (custom datasource)",
+      "matchDatasources": ["custom.thunderstore"],
+      "addLabels": ["thunderstore"]
+    },
+    {
+      "description": "Major updates",
+      "matchUpdateTypes": ["major"],
+      "addLabels": ["major-update"]
+    },
+    {
+      "description": "Minor updates",
+      "matchUpdateTypes": ["minor"],
+      "addLabels": ["minor-update"]
+    },
+    {
+      "description": "Patch updates",
+      "matchUpdateTypes": ["patch"],
+      "addLabels": ["patch-update"]
+    },
+    {
+      "description": "Automerge patches and digests; manual workflow_dispatch cuts the release later",
+      "matchUpdateTypes": ["patch", "digest"],
+      "automerge": true
+    }
+  ]
+}

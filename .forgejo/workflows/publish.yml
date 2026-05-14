@@ -1,0 +1,414 @@
+name: Publish
+
+# Fires when the local release.sh pushes a v*.*.* tag. Never re-tags from
+# CI -- release.sh is the only path that creates tags. Plain commits to main
+# don't trigger anything; the build.yml workflow handles PR-time sanity.
+#
+# Two parallel jobs after validate:
+#   - thunderstore: uploads the zip via tcli (one-shot; no-delete on TS side)
+#   - reconcile-releases: walks ALL v* tags and creates/updates releases on
+#     cluster forgejo + NAS forgejo + github, attaching each version's zip.
+#     Self-healing: a tag whose release failed on a prior run is picked up
+#     the next time any release fires.
+#
+# Per-registry mirror steps are continue-on-error so missing secrets or
+# pre-mirror-setup repos warn rather than fail the whole workflow. The
+# summary job rolls outcomes up and turns the run red on partial failure.
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  THUNDERSTORE_NAMESPACE: SisyphusMD
+  THUNDERSTORE_COMMUNITY: peak
+
+jobs:
+  validate:
+    name: Validate release artifact
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
+      zip-path: ${{ steps.ver.outputs.zip-path }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Verify tag, csproj, CHANGELOG, and zip are consistent
+        id: ver
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          VERSION="${TAG#v}"
+          ZIP="releases/SisyphusMD-GhostSpectator-${VERSION}.zip"
+
+          # Zip must be present -- release.sh commits it alongside the tag.
+          # If missing, the publish can't proceed and the only fix is to
+          # re-run release.sh (which won't re-use the same tag).
+          if [ ! -f "$ZIP" ]; then
+            echo "::error::Release zip not found at $ZIP"
+            exit 1
+          fi
+
+          # CHANGELOG must have the corresponding [VERSION] section --
+          # used by reconcile-releases as the release body. Escape dots so
+          # the regex doesn't loosely match e.g. "0X1Y0" as "0.1.0".
+          V_RE=$(printf '%s' "${VERSION}" | sed 's/\./\\./g')
+          if ! grep -qE "^## \[${V_RE}\]" CHANGELOG.md; then
+            echo "::error file=CHANGELOG.md::No section for version ${VERSION}"
+            exit 1
+          fi
+
+          # csproj version must match the tag. Otherwise the published mod
+          # reports a different version than what the tag claims.
+          CSPROJ_VER=$(grep -oE '<Version>[0-9]+\.[0-9]+\.[0-9]+</Version>' \
+            src/GhostSpectator/GhostSpectator.csproj \
+            | sed -E 's|<Version>(.+)</Version>|\1|')
+          if [ "$CSPROJ_VER" != "$VERSION" ]; then
+            echo "::error::csproj <Version> is ${CSPROJ_VER} but tag is ${VERSION}"
+            exit 1
+          fi
+
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "zip-path=${ZIP}" >> "$GITHUB_OUTPUT"
+          echo "OK: ${TAG} matches csproj + CHANGELOG; zip is ${ZIP}"
+
+  thunderstore:
+    name: Publish to Thunderstore
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # continue-on-error wouldn't be appropriate here -- Thunderstore is the
+    # primary publish target, and a failure should be loud. Note: TS is
+    # no-delete, so if this succeeds but a later mirror fails, the version
+    # is committed regardless. release.sh's "tested in-game?" gate is the
+    # human check that should prevent that scenario.
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - uses: actions/setup-dotnet@5e4ada9b3fbcf86d9eaf99cda49f0bdeeb95fce4 # v5.0.0
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install tcli (Thunderstore CLI)
+        # tcli is Thunderstore's official upload tool. NuGet package id is
+        # `tcli` (not `ThunderstoreCLI`). Version line is tracked by renovate
+        # via the custom regex manager in .renovaterc.json.
+        # renovate: datasource=nuget depName=tcli
+        run: dotnet tool install --global tcli --version 0.2.4
+
+      - name: Upload zip to Thunderstore
+        env:
+          ZIP: ${{ needs.validate.outputs.zip-path }}
+          TS_TOKEN: ${{ secrets.THUNDERSTORE_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${TS_TOKEN:-}" ]; then
+            echo "::error::THUNDERSTORE_TOKEN secret is not set"
+            exit 1
+          fi
+          # `tcli publish --file` skips the build step (we already built locally)
+          # and uploads the existing zip. Metadata (namespace, community,
+          # categories, deps) is read from the manifest inside the zip --
+          # ThunderPipe generated that during the local build, so it's already
+          # version-stamped + dep-pinned.
+          tcli publish \
+            --token "$TS_TOKEN" \
+            --file "$ZIP" \
+            --repository https://thunderstore.io
+
+  reconcile-releases:
+    name: Reconcile releases (forgejo cluster + NAS + github)
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      cluster-failures: ${{ steps.reconcile.outputs.cluster-failures }}
+      nas-failures: ${{ steps.reconcile.outputs.nas-failures }}
+      github-failures: ${{ steps.reconcile.outputs.github-failures }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0  # all tags needed for the reconciliation loop
+
+      # Walks every v* tag and reconciles releases on cluster forgejo, NAS
+      # forgejo, and github. Same self-healing pattern as archiver: a release
+      # that failed on a prior run is picked up by the next successful run.
+      # Each tagged release retroactively heals every gap since the project
+      # began. PATCHes existing releases (keeps body in sync with CHANGELOG
+      # edits) and POSTs missing ones. Asset upload skips if already present.
+      - name: Reconcile and attach zips
+        id: reconcile
+        env:
+          CLUSTER_TOKEN: ${{ secrets.CLUSTER_FORGEJO_REPO_WRITE_PAT }}
+          CLUSTER_API: ${{ github.server_url }}/api/v1/repos/${{ github.repository }}/releases
+          NAS_TOKEN: ${{ secrets.NAS_FORGEJO_REPO_WRITE_PAT }}
+          NAS_API: https://forgejo.nas.bryantserver.com/api/v1/repos/${{ github.repository }}/releases
+          GH_TOKEN: ${{ secrets.GH_REPO_WRITE_PAT }}
+          GH_API: https://api.github.com/repos/${{ github.repository }}/releases
+          GH_UPLOAD_API: https://uploads.github.com/repos/${{ github.repository }}/releases
+        run: |
+          set -uo pipefail
+
+          # Create-or-update release. Returns the release ID on stdout for
+          # the caller to feed into the asset upload step. Returns "" on
+          # failure (caller increments per-registry failure count).
+          reconcile_release() {
+            local label=$1 api=$2 token=$3 auth_scheme=$4 tag=$5 payload_file=$6
+            local http id auth_header
+
+            if [ "$auth_scheme" = "bearer" ]; then
+              auth_header="Authorization: Bearer ${token}"
+            else
+              auth_header="Authorization: token ${token}"
+            fi
+
+            http=$(curl -sSL -k -o /tmp/existing.json -w "%{http_code}" \
+              -H "${auth_header}" \
+              "${api}/tags/${tag}")
+
+            if [ "$http" = "200" ]; then
+              id=$(jq -r .id /tmp/existing.json)
+              if [ -z "$id" ] || [ "$id" = "null" ]; then
+                echo "  [${label}] ${tag} 200 OK but no .id in response — registry returned a malformed release object" >&2
+                return 1
+              fi
+              if curl -fsSL -k -X PATCH \
+                  -H "${auth_header}" \
+                  -H "Content-Type: application/json" \
+                  -d @"${payload_file}" \
+                  "${api}/${id}" >/dev/null; then
+                echo "  [${label}] ${tag} updated (id=${id})" >&2
+                printf '%s' "${id}"
+                return 0
+              fi
+              echo "  [${label}] ${tag} update FAILED" >&2
+              return 1
+            elif [ "$http" = "404" ]; then
+              if curl -fsSL -k -X POST \
+                  -o /tmp/created.json \
+                  -H "${auth_header}" \
+                  -H "Content-Type: application/json" \
+                  -d @"${payload_file}" \
+                  "${api}"; then
+                id=$(jq -r .id /tmp/created.json)
+                if [ -z "$id" ] || [ "$id" = "null" ]; then
+                  echo "  [${label}] ${tag} created but registry response missing .id" >&2
+                  return 1
+                fi
+                echo "  [${label}] ${tag} created (id=${id})" >&2
+                printf '%s' "${id}"
+                return 0
+              fi
+              echo "  [${label}] ${tag} create FAILED" >&2
+              return 1
+            else
+              echo "  [${label}] ${tag} unexpected HTTP ${http}" >&2
+              return 1
+            fi
+          }
+
+          # Upload zip as a release asset if (a) the zip exists in releases/
+          # for this tag and (b) the asset isn't already attached.
+          # Forgejo: POST /releases/{id}/assets?name=<filename>, body = file.
+          # GitHub:  POST uploads.github.com/.../releases/{id}/assets?name=<filename>
+          # Returns 0 on success (or already-present), 1 on upload failure.
+          upload_asset() {
+            local label=$1 api=$2 upload_api=$3 token=$4 auth_scheme=$5
+            local rid=$6 zip=$7 auth_header
+            local existing http
+
+            if [ "$auth_scheme" = "bearer" ]; then
+              auth_header="Authorization: Bearer ${token}"
+            else
+              auth_header="Authorization: token ${token}"
+            fi
+
+            local fname
+            fname=$(basename "$zip")
+
+            # Check if the asset is already attached. Forgejo + github
+            # both expose .assets on the release object. Probe with explicit
+            # HTTP-code check so a transient 5xx doesn't make us think the
+            # asset is missing and re-upload it (duplicates behavior varies
+            # per registry).
+            local probe_http
+            probe_http=$(curl -sSL -k -o /tmp/release-probe.json -w "%{http_code}" \
+              -H "${auth_header}" "${api}/${rid}")
+            if [ "${probe_http:0:1}" != "2" ]; then
+              echo "  [${label}] asset existence probe failed (HTTP ${probe_http}); skipping upload to avoid duplicate" >&2
+              return 1
+            fi
+            existing=$(jq -r --arg n "$fname" '.assets[]? | select(.name == $n) | .id' /tmp/release-probe.json | head -n1)
+            if [ -n "$existing" ] && [ "$existing" != "null" ]; then
+              echo "  [${label}] asset ${fname} already attached (id=${existing})" >&2
+              return 0
+            fi
+
+            # Upload. Forgejo uses multipart form; github uses raw body.
+            if [ -n "$upload_api" ]; then
+              # github
+              http=$(curl -sSL -o /tmp/asset-resp.json -w "%{http_code}" \
+                -X POST \
+                -H "${auth_header}" \
+                -H "Content-Type: application/zip" \
+                --data-binary @"$zip" \
+                "${upload_api}/${rid}/assets?name=${fname}")
+            else
+              # forgejo
+              http=$(curl -sSL -k -o /tmp/asset-resp.json -w "%{http_code}" \
+                -X POST \
+                -H "${auth_header}" \
+                -F "attachment=@${zip}" \
+                "${api}/${rid}/assets?name=${fname}")
+            fi
+
+            if [ "${http:0:1}" = "2" ]; then
+              echo "  [${label}] asset ${fname} uploaded" >&2
+              return 0
+            fi
+            echo "  [${label}] asset ${fname} upload FAILED (HTTP ${http})" >&2
+            return 1
+          }
+
+          cluster_failures=0
+          nas_failures=0
+          github_failures=0
+
+          for tag in $(git tag -l 'v*.*.*' --sort=-v:refname); do
+            version="${tag#v}"
+            commit_sha=$(git rev-parse "${tag}^{}")
+            # Escape dots so the regex doesn't loosely match e.g. 0X1Y0 as 0.1.0.
+            V_RE=$(printf '%s' "${version}" | sed 's/\./\\./g')
+
+            if ! grep -qE "^## \[${V_RE}\]" CHANGELOG.md; then
+              echo "::warning::No CHANGELOG entry for ${version}; skipping ${tag}"
+              continue
+            fi
+
+            # Extract this version's CHANGELOG section as the release body.
+            BODY=$(awk -v v="${V_RE}" '
+              $0 ~ "^## \\[" v "\\]" { in_section=1; next }
+              in_section && /^## \[/ { exit }
+              in_section && started { print }
+              in_section && /[^[:space:]]/ && !started { started=1; print }
+            ' CHANGELOG.md)
+            [ -z "$BODY" ] && BODY="See CHANGELOG.md for details."
+
+            jq -n \
+              --arg tag "$tag" \
+              --arg name "$tag" \
+              --arg body "$BODY" \
+              --arg sha "$commit_sha" \
+              '{tag_name:$tag, name:$name, body:$body, target_commitish:$sha, draft:false, prerelease:false}' \
+              > /tmp/release-payload.json
+
+            ZIP="releases/SisyphusMD-GhostSpectator-${version}.zip"
+
+            echo "::group::Reconciling ${tag}"
+
+            # Cluster forgejo (where this workflow runs)
+            if [ -n "${CLUSTER_TOKEN:-}" ]; then
+              cid=$(reconcile_release "cluster" "$CLUSTER_API" "$CLUSTER_TOKEN" "token" "$tag" /tmp/release-payload.json) \
+                || cluster_failures=$((cluster_failures + 1))
+              if [ -n "${cid:-}" ] && [ -f "$ZIP" ]; then
+                upload_asset "cluster" "$CLUSTER_API" "" "$CLUSTER_TOKEN" "token" "$cid" "$ZIP" \
+                  || cluster_failures=$((cluster_failures + 1))
+              fi
+            else
+              echo "  [cluster] skipped (CLUSTER_FORGEJO_REPO_WRITE_PAT not set)"
+            fi
+
+            # NAS forgejo mirror
+            if [ -n "${NAS_TOKEN:-}" ]; then
+              nid=$(reconcile_release "nas" "$NAS_API" "$NAS_TOKEN" "token" "$tag" /tmp/release-payload.json) \
+                || nas_failures=$((nas_failures + 1))
+              if [ -n "${nid:-}" ] && [ -f "$ZIP" ]; then
+                upload_asset "nas" "$NAS_API" "" "$NAS_TOKEN" "token" "$nid" "$ZIP" \
+                  || nas_failures=$((nas_failures + 1))
+              fi
+            else
+              echo "  [nas] skipped (NAS_FORGEJO_REPO_WRITE_PAT not set)"
+            fi
+
+            # GitHub public mirror
+            if [ -n "${GH_TOKEN:-}" ]; then
+              gid=$(reconcile_release "github" "$GH_API" "$GH_TOKEN" "bearer" "$tag" /tmp/release-payload.json) \
+                || github_failures=$((github_failures + 1))
+              if [ -n "${gid:-}" ] && [ -f "$ZIP" ]; then
+                upload_asset "github" "$GH_API" "$GH_UPLOAD_API" "$GH_TOKEN" "bearer" "$gid" "$ZIP" \
+                  || github_failures=$((github_failures + 1))
+              fi
+            else
+              echo "  [github] skipped (GH_REPO_WRITE_PAT not set)"
+            fi
+
+            echo "::endgroup::"
+          done
+
+          echo "Reconciliation: cluster_failures=${cluster_failures} nas_failures=${nas_failures} github_failures=${github_failures}"
+          echo "cluster-failures=${cluster_failures}" >> "$GITHUB_OUTPUT"
+          echo "nas-failures=${nas_failures}" >> "$GITHUB_OUTPUT"
+          echo "github-failures=${github_failures}" >> "$GITHUB_OUTPUT"
+
+      - name: Report reconciliation results
+        if: always()
+        env:
+          CLUSTER_FAILURES: ${{ steps.reconcile.outputs.cluster-failures }}
+          NAS_FAILURES: ${{ steps.reconcile.outputs.nas-failures }}
+          GITHUB_FAILURES: ${{ steps.reconcile.outputs.github-failures }}
+        run: |
+          if [ "${CLUSTER_FAILURES:-0}" != "0" ]; then
+            echo "::warning::Cluster forgejo: ${CLUSTER_FAILURES} release/asset operation(s) failed"
+          fi
+          if [ "${NAS_FAILURES:-0}" != "0" ]; then
+            echo "::warning::NAS forgejo: ${NAS_FAILURES} release/asset operation(s) failed"
+          fi
+          if [ "${GITHUB_FAILURES:-0}" != "0" ]; then
+            echo "::warning::GitHub: ${GITHUB_FAILURES} release/asset operation(s) failed"
+          fi
+
+  summary:
+    name: Workflow summary
+    needs: [thunderstore, reconcile-releases]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Aggregate outcomes
+        env:
+          TS_RESULT: ${{ needs.thunderstore.result }}
+          RR_RESULT: ${{ needs.reconcile-releases.result }}
+          CLUSTER_FAILURES: ${{ needs.reconcile-releases.outputs.cluster-failures }}
+          NAS_FAILURES: ${{ needs.reconcile-releases.outputs.nas-failures }}
+          GITHUB_FAILURES: ${{ needs.reconcile-releases.outputs.github-failures }}
+        run: |
+          set -eu
+          echo "Job results:"
+          echo "  thunderstore:       ${TS_RESULT}"
+          echo "  reconcile-releases: ${RR_RESULT}"
+          echo "Per-registry failures:"
+          echo "  cluster forgejo: ${CLUSTER_FAILURES:-<n/a>}"
+          echo "  NAS forgejo:     ${NAS_FAILURES:-<n/a>}"
+          echo "  GitHub:          ${GITHUB_FAILURES:-<n/a>}"
+
+          failed=0
+          for r in "$TS_RESULT" "$RR_RESULT"; do
+            case "$r" in
+              success|skipped) ;;
+              *) failed=1 ;;
+            esac
+          done
+          [ "${CLUSTER_FAILURES:-0}" != "0" ] && failed=1
+          [ "${NAS_FAILURES:-0}" != "0" ] && failed=1
+          [ "${GITHUB_FAILURES:-0}" != "0" ] && failed=1
+
+          if [ "$failed" -ne 0 ]; then
+            echo "::error::One or more publish targets failed; see warnings above"
+            exit 1
+          fi
+          echo "All publish targets succeeded"

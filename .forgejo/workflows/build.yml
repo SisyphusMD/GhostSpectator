@@ -1,0 +1,39 @@
+name: Validate
+
+# PEAK has no public stripped-game-libs package (unlike Lethal Company), and the
+# game DLLs we compile against, Assembly-CSharp.dll, UnityEngine.dll, can't be
+# redistributed. So CI can't actually `dotnet build`; the compile step lives on
+# the maintainer's local machine where PEAK is installed. This workflow does the
+# CI-friendly slice: validate that the project file parses and NuGet feeds work.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: validate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Restore + project parse
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 1
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'
+
+      - name: Restore (no compile)
+        # `dotnet restore` parses the csproj, resolves NuGet packages from the
+        # BepInEx + windows10ce feeds, and validates the dependency tree. It does
+        # not attempt to compile against game DLLs, so it succeeds without them.
+        run: dotnet restore
