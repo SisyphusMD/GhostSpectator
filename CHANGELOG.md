@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-05-19
+
+### Validated against
+
+- PEAK build 23203792
+
 Initial implementation of permanent spectator-ghost mode for the Steam game [PEAK](https://store.steampowered.com/app/3527290/PEAK/).
 
 ### Added

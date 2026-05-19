@@ -90,7 +90,9 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - uses: actions/setup-dotnet@5e4ada9b3fbcf86d9eaf99cda49f0bdeeb95fce4 # v5.0.0
+      # Pinned to tag (not SHA) because data.forgejo.org's actions mirror
+      # doesn't surface every upstream SHA; build.yml uses the same @v4 ref.
+      - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
 
@@ -98,8 +100,14 @@ jobs:
         # tcli is Thunderstore's official upload tool. NuGet package id is
         # `tcli` (not `ThunderstoreCLI`). Version line is tracked by renovate
         # via the custom regex manager in .renovaterc.json.
+        # `dotnet tool install --global` drops the binary into
+        # ~/.dotnet/tools, which the runner does NOT add to PATH by default
+        # (it prints a hint, doesn't apply it). Export to GITHUB_PATH so
+        # subsequent steps can invoke `tcli` directly.
         # renovate: datasource=nuget depName=tcli
-        run: dotnet tool install --global tcli --version 0.2.4
+        run: |
+          dotnet tool install --global tcli --version 0.2.4
+          echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
 
       - name: Upload zip to Thunderstore
         env:
