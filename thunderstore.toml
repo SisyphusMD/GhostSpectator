@@ -13,7 +13,7 @@ schemaVersion = "0.0.1"
 [package]
 namespace = "SisyphusMD"
 name = "GhostSpectator"
-versionNumber = "0.1.0"
+versionNumber = "0.1.1"
 description = "Spawn as a permanent ghost, never alive, never revived. Spectate, switch between live players, and talk on voice exactly like a vanilla PEAK ghost."
 websiteUrl = "https://forgejo.bryantserver.com/SisyphusMD/GhostSpectator"
 containsNsfwContent = false

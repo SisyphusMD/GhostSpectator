@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-05-19
+
+### Validated against
+
+- PEAK build 23203792
+
 ### Fixed
 - **Post-EndScreen "waiting for others" strip now shows every player.** Vanilla's `WaitingForPlayersUI.scoutImages[]` is a fixed 4-slot array, which silently dropped climbers when the raised lobby cap pushed total players above 4. The array now dynamically expands to `Character.AllCharacters.Count` by cloning the prefab's first slot under the same parent. Approach lifted from [PEAK-Unlimited](https://github.com/glarmer/PEAK-Unlimited).
 
