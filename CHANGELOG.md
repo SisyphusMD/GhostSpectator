@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Fixed
+- **Post-EndScreen "waiting for others" strip now shows every player.** Vanilla's `WaitingForPlayersUI.scoutImages[]` is a fixed 4-slot array, which silently dropped climbers when the raised lobby cap pushed total players above 4. The array now dynamically expands to `Character.AllCharacters.Count` by cloning the prefab's first slot under the same parent. Approach lifted from [PEAK-Unlimited](https://github.com/glarmer/PEAK-Unlimited).
+
 ## [0.1.0] - 2026-05-19
 
 ### Validated against
@@ -33,6 +36,4 @@ Initial implementation of permanent spectator-ghost mode for the Steam game [PEA
 - **All-spectator-lobby protection.** The airport kiosk also refuses runs where every player is a spectator, since there'd be nobody to follow.
 
 ### Known limitations
-- Ancient Statues drop no items in vanilla and silently destroy themselves when no real teammate is down -- matches vanilla behavior when nobody needs reviving.
-- The post-EndScreen "waiting for others" portrait strip shows the first 4 players in actor order; if spectators occupy the first slots they may visually displace live climbers. Cosmetic only -- doesn't block the run-end flow.
 - The mid-run join popup doesn't yet auto-spectate when all 4 live slots are full; both [Play] and [Spectate] options remain enabled. (PEAK's auto-scene-sync prevents knowing the live count before the popup needs to show. Workaround: just pick Spectate if you know the team is full.)

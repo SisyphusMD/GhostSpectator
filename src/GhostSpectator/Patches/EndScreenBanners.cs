@@ -1,6 +1,8 @@
 using HarmonyLib;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
+using Zorro.Core;
 
 namespace GhostSpectator.Patches;
 
@@ -105,5 +107,46 @@ internal static class Patch_EndScreen_EndSequenceRoutine_Banners
         tmp.text = pick;
         SpectatorState.BannersOverriddenThisRun = true;
         Plugin.TraceDebug($"[trace] EndScreen banner overridden via direct TMP_Text (no LocalizedText found): \"{pick}\"");
+    }
+}
+
+// Post-EndScreen "waiting for others" portrait strip. WaitingForPlayersUI's
+// scoutImages[] is configured in the Unity prefab as a fixed 4-slot Image
+// array; vanilla Update walks PlayerHandler.GetAllPlayers() and silently
+// drops anything past slot 3. With our raised lobby cap (4 live + 16
+// spectators), most rooms exceed 4 total players, so live climbers can get
+// dropped if spectators are ahead of them in iteration order.
+//
+// Spectators have their own Next button and are waited on, so they DO
+// belong in the strip -- we just need more slots. Approach: prefix expands
+// scoutImages[] to Character.AllCharacters.Count by Instantiate-cloning the
+// first slot under the same parent (preserves the UI prefab's layout group
+// + sprite + size + anchors). Vanilla Update then fills the expanded array
+// normally; the prefix is idempotent so it's safe to re-run per frame.
+//
+// Approach lifted from PEAK-Unlimited's WaitingForPlayersUIPatch
+// (https://github.com/glarmer/PEAK-Unlimited).
+[HarmonyPatch(typeof(WaitingForPlayersUI), "Update")]
+internal static class Patch_WaitingForPlayersUI_Update
+{
+    [HarmonyPrefix]
+    private static void Prefix(WaitingForPlayersUI __instance)
+    {
+        if (__instance.scoutImages == null) return;
+        if (__instance.scoutImages.Length == 0) return;
+        if (__instance.scoutImages.Length >= Character.AllCharacters.Count) return;
+
+        var template = __instance.scoutImages[0];
+        if (template == null) return;
+
+        var expanded = new Image[Character.AllCharacters.Count];
+        for (int i = 0; i < Character.AllCharacters.Count; i++)
+        {
+            if (i < __instance.scoutImages.Length)
+                expanded[i] = __instance.scoutImages[i];
+            else
+                expanded[i] = UnityEngine.Object.Instantiate(template, template.transform.parent);
+        }
+        __instance.scoutImages = expanded;
     }
 }
