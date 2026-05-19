@@ -247,9 +247,15 @@ internal class RoomCallbackHandler : MonoBehaviourPunCallbacks
             _sortedPlayerLabels = _emptyLabels;
             return;
         }
+        // Sort by Photon ActorNumber ascending so every client renders the
+        // same player order (host/first-joiner first, then each new player in
+        // join order). Previously we put the local player first per-client,
+        // which made the panel look different on every screen; consistent
+        // ordering also lets players reference each other by position. The
+        // local player is still tagged "(you)" in the label, just not floated
+        // to the top.
         _sortedPlayers = PhotonNetwork.PlayerList
-            .OrderByDescending(p => p.IsLocal)
-            .ThenBy(p => p.ActorNumber)
+            .OrderBy(p => p.ActorNumber)
             .ToArray();
         _sortedPlayerLabels = new string[_sortedPlayers.Length];
         for (int i = 0; i < _sortedPlayers.Length; i++)

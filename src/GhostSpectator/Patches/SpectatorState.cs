@@ -303,6 +303,29 @@ internal static class SpectatorState
         return IsGhost(character);
     }
 
+    // True when this player's Character (matched by ActorNumber) currently
+    // reports dead || fullyPassedOut. False if the character isn't found in
+    // Character.AllCharacters yet (early-scene-load window) or the data is
+    // null. Used by the airport panel's live-section icon picker during a
+    // run: a player whose character is mid-run-dead-but-revivable renders
+    // with a ghost icon instead of the climber silhouette, while still
+    // appearing in the live list (only permanent-spectator-toggle players
+    // move to the dedicated spectators section).
+    internal static bool IsPlayerCharacterDead(Photon.Realtime.Player? player)
+    {
+        if (player == null) return false;
+        var all = Character.AllCharacters;
+        if (all == null) return false;
+        for (int i = 0; i < all.Count; i++)
+        {
+            var c = all[i];
+            if (c == null || c.photonView == null || c.photonView.Owner == null) continue;
+            if (c.photonView.Owner.ActorNumber != player.ActorNumber) continue;
+            return c.data != null && (c.data.dead || c.data.fullyPassedOut);
+        }
+        return false;
+    }
+
     // Player-keyed overload for the item-spawn transpiler paths
     // (RoomCallbackHandler.GetNonSpectatorPlayerList). When locked, the
     // RunRoles value is authoritative. When not locked (pre-run), looks up

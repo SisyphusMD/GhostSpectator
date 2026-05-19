@@ -81,7 +81,7 @@ Each release is validated against a specific PEAK build before publishing (see [
 
 ## Bug reports & support
 
-Found a bug or have a feature request? Comment on the [Thunderstore package page](https://thunderstore.io/c/peak/p/SisyphusMD/GhostSpectator/) (requires a free Thunderstore account). Include your PEAK build, GhostSpectator version, and the relevant `<PEAK>/BepInEx/LogOutput.log` output. Multiplayer issues are easier to debug if you can also provide logs from the host.
+Found a bug or have a feature request? Email [high.goose3602@fastmail.com](mailto:high.goose3602@fastmail.com). Include your PEAK build, GhostSpectator version, and the relevant `<PEAK>/BepInEx/LogOutput.log` output. Multiplayer issues are easier to debug if you can also provide logs from the host.
 
 This is a hobby project, not commercially supported. Best-effort response times.
 

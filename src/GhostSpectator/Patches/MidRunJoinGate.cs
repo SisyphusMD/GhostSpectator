@@ -43,6 +43,14 @@ internal static class MidRunJoinGate
     // dict (= we've been in this run before). null means "first-time joiner,
     // show the popup as usual." Consumed by the wait coroutine.
     internal static bool? LockedRoleForJoiner;
+
+    // Number of live (non-spectator) players already in the run, counted from
+    // the master's Steam-lobby-mirrored RunRoles at HandleMessage time. Used
+    // by the wait coroutine to decide whether to disable the popup's [Play]
+    // button -- if this is already >= LiveCap, joining as a live climber
+    // would push past the cap. -1 = "didn't count" (no RunRoles read, or
+    // Airport scene). Consumed and reset by the wait coroutine.
+    internal static int LiveCountAtJoin = -1;
 }
 
 // Capture the destination scene name when a join-host-room message arrives.
@@ -87,6 +95,7 @@ internal static class Patch_SteamLobbyHandler_HandleMessage_CaptureScene
         // earlier in the join flow). MidRunJoinGate.LockedRoleForJoiner is then
         // consumed by the wait coroutine.
         MidRunJoinGate.LockedRoleForJoiner = null;
+        MidRunJoinGate.LiveCountAtJoin = -1;
         if (sceneName == "Airport") return;
         try
         {
@@ -94,12 +103,27 @@ internal static class Patch_SteamLobbyHandler_HandleMessage_CaptureScene
             if (string.IsNullOrEmpty(runRolesStr)) return;
             var roles = new System.Collections.Generic.Dictionary<string, bool>();
             Patches.RoleLock.DeserializeRunRolesFromString(runRolesStr, roles);
+
+            // Rejoiner check (existing).
             var ourUserId = Steamworks.SteamUser.GetSteamID().m_SteamID.ToString();
             if (roles.TryGetValue(ourUserId, out var prefixedRole))
             {
                 MidRunJoinGate.LockedRoleForJoiner = prefixedRole;
                 Plugin.Trace($"[trace] HandleMessage RoomID: rejoiner detected (userId={ourUserId}); locked role isSpec={prefixedRole}");
             }
+
+            // Live-cap pre-count for the popup gating: tally the master's
+            // RunRoles entries where isSpec == false. This count reflects
+            // the locked roles at run-start plus any first-time mid-run
+            // joiners already recorded on master. Used by the wait coroutine
+            // to disable the [Play] button when the cap is already full.
+            int live = 0;
+            foreach (var kvp in roles)
+            {
+                if (!kvp.Value) live++;
+            }
+            MidRunJoinGate.LiveCountAtJoin = live;
+            Plugin.TraceDebug($"[trace] HandleMessage RoomID: counted {live} live player(s) already in run");
         }
         catch (System.Exception ex)
         {
@@ -133,13 +157,16 @@ internal static class Patch_LoadingScreenHandler_Load_InjectPopupWait
         // applying a role from a different lobby.
         MidRunJoinGate.PendingSceneName = null;
         var leftoverLockedRoleForJoiner = MidRunJoinGate.LockedRoleForJoiner;
+        var leftoverLiveCountAtJoin = MidRunJoinGate.LiveCountAtJoin;
         MidRunJoinGate.LockedRoleForJoiner = null;
+        MidRunJoinGate.LiveCountAtJoin = -1;
         if (sceneName == null) return;
         if (sceneName == "Airport") return;
         if (processes == null) return;
-        // Restore LockedRoleForJoiner only when we actually inject the wait
+        // Restore the baton fields only when we actually inject the wait
         // coroutine, since the coroutine is the consumer.
         MidRunJoinGate.LockedRoleForJoiner = leftoverLockedRoleForJoiner;
+        MidRunJoinGate.LiveCountAtJoin = leftoverLiveCountAtJoin;
 
         Plugin.Trace($"[trace] injecting mid-run popup wait into Load() processes for scene '{sceneName}'");
         var wrapped = new IEnumerator[processes.Length + 1];
@@ -163,23 +190,32 @@ internal static class Patch_LoadingScreenHandler_Load_InjectPopupWait
             yield break;
         }
 
-        // First-time mid-run joiner: PEAK uses PhotonNetwork.
-        // AutomaticallySyncScene = true, which holds the JoinRoom handshake
-        // until the joiner is on the master's scene. That means
+        // Live-cap-full fast path: HandleMessage prefix counted live players
+        // from master's RunRoles. If the live cap is already saturated, joining
+        // as a climber would push past it -- so the only sensible option is
+        // [Spectate]. Skip the popup entirely and auto-spectate; clicking a
+        // single-option modal is friction with no information value.
+        int liveAtJoin = MidRunJoinGate.LiveCountAtJoin;
+        MidRunJoinGate.LiveCountAtJoin = -1;
+        if (liveAtJoin >= 0 && liveAtJoin >= Patches.SpectatorState.LiveCap)
+        {
+            Plugin.Trace($"[trace] mid-run joiner: live cap saturated ({liveAtJoin}/{Patches.SpectatorState.LiveCap}); auto-spectating, skipping popup");
+            Plugin.SpectatorEnabled.Value = true;
+            yield break;
+        }
+
+        // First-time mid-run joiner with cap room available: PEAK uses
+        // PhotonNetwork.AutomaticallySyncScene = true, which holds the
+        // JoinRoom handshake until the joiner is on the master's scene.
         // PhotonNetwork.InRoom can't flip to true until the scene load
-        // completes -- which is the very thing our wait coroutine is
-        // blocking. Circular dependency. We can't wait for InRoom here.
-        //
-        // Instead: show the popup unconditionally, wait for the click, set
-        // SpectatorEnabled accordingly. The IsSpectator property update is
-        // queued locally and broadcasts whenever LoadingRoutine restores
-        // IsMessageQueueRunning (after scene load completes). Master
-        // receives the property in OnPlayerPropertiesUpdate, records it to
-        // RunRoles, and republishes to room property + Steam lobby data.
-        //
-        // Drawback: we can't auto-spectate when the live cap is full because
-        // we don't know live cap until we're in the room. The popup shows
-        // both [Play] and [Spectate] options enabled. Acceptable for v0.1.
+        // completes -- which is what our wait coroutine is blocking. So we
+        // can't wait for InRoom here. Show the popup unconditionally, wait
+        // for the click, set SpectatorEnabled accordingly. The IsSpectator
+        // property update is queued locally and broadcasts whenever
+        // LoadingRoutine restores IsMessageQueueRunning (after scene load
+        // completes). Master receives the property in OnPlayerPropertiesUpdate,
+        // records it to RunRoles, and republishes to room property + Steam
+        // lobby data.
         var popup = MidRunJoinPopup.Instance;
         if (popup == null)
         {
@@ -189,7 +225,17 @@ internal static class Patch_LoadingScreenHandler_Load_InjectPopupWait
         }
         popup.Show();
         Plugin.Trace("[trace] mid-run wait coroutine: popup shown, waiting for click");
-        while (!popup.HasChoice) yield return null;
+        // Defensive: also break if the popup hides without a click being
+        // received (5-min timeout watchdog, future bug, etc.). Without this
+        // the coroutine spins forever and blocks scene load -> JoinRoom ->
+        // "forever loading screen."
+        while (popup.IsShowing && !popup.HasChoice) yield return null;
+        if (!popup.HasChoice)
+        {
+            Plugin.TraceWarn("[trace] mid-run wait coroutine: popup hid without a click; defaulting to live join");
+            Plugin.SpectatorEnabled.Value = false;
+            yield break;
+        }
         popup.Hide();
         Plugin.Trace($"[trace] mid-run popup choice received: spectate={popup.ChoiceIsSpectate}");
     }

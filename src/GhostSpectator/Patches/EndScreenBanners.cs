@@ -129,6 +129,17 @@ internal static class Patch_EndScreen_EndSequenceRoutine_Banners
 [HarmonyPatch(typeof(WaitingForPlayersUI), "Update")]
 internal static class Patch_WaitingForPlayersUI_Update
 {
+    // Cached on first observation, used to restore live-climber slots when a
+    // previously-spectator slot becomes a live climber (player toggled mid-
+    // session, or actor reused across runs in a different role). Captured
+    // before any of our overrides so it's guaranteed to be the prefab's
+    // original scout sprite.
+    private static Sprite? _vanillaScoutSprite;
+    // Built lazily from our procedural ghost Texture2D the first time the
+    // strip renders; used as the spectator-slot sprite. 64x64 source for
+    // crisp scaling -- the Image's RectTransform sizes it down per the UI.
+    private static Sprite? _ghostSprite;
+
     [HarmonyPrefix]
     private static void Prefix(WaitingForPlayersUI __instance)
     {
@@ -148,5 +159,55 @@ internal static class Patch_WaitingForPlayersUI_Update
                 expanded[i] = UnityEngine.Object.Instantiate(template, template.transform.parent);
         }
         __instance.scoutImages = expanded;
+    }
+
+    // Sprite override: spectator slots show our ghost silhouette, live slots
+    // show the original prefab scout sprite. Vanilla's Update has already
+    // colored each slot with the player's skin color and SetActive'd the
+    // right ones; we only touch .sprite, never .color. Walking GetAllPlayers()
+    // in the same iteration order vanilla used guarantees the slot-to-player
+    // mapping matches what vanilla put there.
+    [HarmonyPostfix]
+    private static void Postfix(WaitingForPlayersUI __instance)
+    {
+        if (__instance.scoutImages == null || __instance.scoutImages.Length == 0) return;
+
+        // First-encounter snapshot of the original prefab sprite. Runs once
+        // ever per game session. Captured BEFORE we apply any override, so
+        // the slot it reads from still holds the unmodified prefab sprite.
+        if (_vanillaScoutSprite == null)
+        {
+            for (int i = 0; i < __instance.scoutImages.Length; i++)
+            {
+                if (__instance.scoutImages[i] != null && __instance.scoutImages[i].sprite != null)
+                {
+                    _vanillaScoutSprite = __instance.scoutImages[i].sprite;
+                    break;
+                }
+            }
+        }
+
+        if (_ghostSprite == null)
+        {
+            var tex = Runtime.GuiHelpers.BuildGhostTexture(64);
+            _ghostSprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f));
+        }
+
+        int slot = 0;
+        foreach (var p in PlayerHandler.GetAllPlayers())
+        {
+            if (slot >= __instance.scoutImages.Length) break;
+            var img = __instance.scoutImages[slot];
+            if (img != null && p != null && p.photonView != null && p.photonView.Owner != null)
+            {
+                bool isSpec = SpectatorState.IsTrustedSpectator(p.photonView.Owner);
+                var desired = isSpec ? _ghostSprite : _vanillaScoutSprite;
+                if (desired != null && img.sprite != desired)
+                {
+                    img.sprite = desired;
+                }
+            }
+            slot++;
+        }
     }
 }

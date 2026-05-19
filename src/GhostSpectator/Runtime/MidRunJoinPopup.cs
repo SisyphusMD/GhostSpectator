@@ -77,19 +77,17 @@ internal class MidRunJoinPopup : MonoBehaviour
     {
         if (!_isShowing) return;
         // Self-hide if we've been visible far past any reasonable click time.
-        // Indicates the waiter coroutine died without calling Hide.
+        // Indicates the waiter coroutine died without calling Hide. The
+        // earlier !PhotonNetwork.InRoom self-hide was removed in v0.2.0
+        // because it could not distinguish "user exited the lobby" from
+        // "we're mid-join and AutomaticallySyncScene is holding JoinRoom
+        // open behind our wait coroutine" -- during a mid-run join the
+        // popup is shown BEFORE InRoom flips to true, so the watchdog was
+        // misfiring on the legitimate happy path and self-hiding the
+        // popup before the user could click it.
         if (Time.realtimeSinceStartup - _shownAtUnscaledTime > SelfHideTimeoutSeconds)
         {
             Plugin.TraceWarn($"[trace] MidRunJoinPopup self-hiding after {SelfHideTimeoutSeconds:0}s timeout (waiter coroutine likely orphaned)");
-            Hide();
-            return;
-        }
-        // Self-hide if we've left the Photon room while the popup is up
-        // (lobby exit, disconnect). No room = no run to join = popup is
-        // showing for a destination that no longer applies.
-        if (!Photon.Pun.PhotonNetwork.InRoom)
-        {
-            Plugin.TraceWarn("[trace] MidRunJoinPopup self-hiding because PhotonNetwork.InRoom flipped to false (lobby exit?)");
             Hide();
         }
     }

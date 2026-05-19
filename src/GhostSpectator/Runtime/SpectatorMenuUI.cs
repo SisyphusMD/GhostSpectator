@@ -6,13 +6,24 @@ using Zorro.Core;
 namespace GhostSpectator.Runtime;
 
 // Spectator toggle (power button, airport only) + always-visible player list
-// showing who's in the room and a ghost icon per row indicating each player's
-// spectator status. Top-left corner, mouse-only.
+// showing who's in the room with a per-row icon indicating live vs spectator
+// status. Top-left corner, mouse-only.
 //
-// The icon is drawn procedurally so we don't ship any image assets. It's tinted
-// per-row: dim gray when the player is alive, the player's chosen character
-// skin color when spectating. Skin color is read from PEAK's own
-// PersistentPlayerDataService, which the game already syncs across the room.
+// Two procedural icons, both drawn from C# pixel data so we don't ship any
+// image assets:
+//   - climber silhouette (head circle + trapezoidal body) -- shown on live
+//     rows in the airport AND on live rows during a run when the player's
+//     Character is alive.
+//   - ghost silhouette (rounded head, scallop bottom, two eyes) -- shown on
+//     spectator rows always, and on live rows during a run when the player's
+//     Character is currently in vanilla mid-run dead/passedOut state (they
+//     stay in the LIVE list visually, just the icon changes to communicate
+//     "temporarily a vanilla ghost waiting to be revived").
+//
+// Both icons are tinted to the player's chosen character skin color
+// (read from PEAK's PersistentPlayerDataService, which the game already
+// syncs across the room) so a player keeps the same color identity whether
+// they're showing as a climber or a ghost.
 internal class SpectatorMenuUI : MonoBehaviour
 {
     private GUIStyle? _titleStyle;
@@ -21,6 +32,7 @@ internal class SpectatorMenuUI : MonoBehaviour
     private GUIStyle? _boxStyle;
     private GUIStyle? _powerButtonStyle;
     private Texture2D? _ghostTexture;
+    private Texture2D? _climberTexture;
     private Texture2D? _powerTexture;
     private Texture2D? _panelBackground;
 
@@ -184,10 +196,20 @@ internal class SpectatorMenuUI : MonoBehaviour
             if (p == null) continue;
             if (Patches.SpectatorState.ClaimsSpectator(p)) continue;
             string label = i < labels.Length ? labels[i] : (string.IsNullOrEmpty(p.NickName) ? "(unnamed)" : p.NickName);
+            // Live-section icon picker:
+            //   - Airport: always climber (no run state to read from).
+            //   - During run: climber if this player's character is alive,
+            //     ghost if it's currently in vanilla mid-run dead/passedOut
+            //     state. The player stays in the LIVE list either way --
+            //     only the icon changes to communicate they're temporarily
+            //     a vanilla ghost waiting to be revived.
+            var liveIcon = inAirport
+                ? _climberTexture
+                : (Patches.SpectatorState.IsPlayerCharacterDead(p) ? _ghostTexture : _climberTexture);
             DrawPlayerRow(p, label, new Rect(
                 panelRect.x + PanelPaddingX, cursorY,
                 panelRect.width - PanelPaddingX * 2, RowHeight),
-                drawGhostIcon: false);
+                icon: liveIcon);
             cursorY += RowHeight;
             liveDrawn++;
         }
@@ -219,10 +241,13 @@ internal class SpectatorMenuUI : MonoBehaviour
             if (p == null) continue;
             if (!Patches.SpectatorState.ClaimsSpectator(p)) continue;
             string label = i < labels.Length ? labels[i] : (string.IsNullOrEmpty(p.NickName) ? "(unnamed)" : p.NickName);
+            // Spectator-section rows always render the ghost icon (this
+            // section is by definition permanent spectators -- their
+            // character is permanently in ghost state for the whole run).
             DrawPlayerRow(p, label, new Rect(
                 panelRect.x + PanelPaddingX, cursorY,
                 panelRect.width - PanelPaddingX * 2, RowHeight),
-                drawGhostIcon: true);
+                icon: _ghostTexture);
             cursorY += RowHeight;
         }
     }
@@ -270,15 +295,16 @@ internal class SpectatorMenuUI : MonoBehaviour
         GUI.color = prevColor;
     }
 
-    private void DrawPlayerRow(Photon.Realtime.Player player, string label, Rect row, bool drawGhostIcon)
+    // Row layout: [name label .................. icon].  Caller passes the
+    // texture to draw on the right side; null = no icon (text-only row).
+    // The icon is tinted by GUI.color to the player's chosen character skin
+    // color so live/ghost icons share the same color identity per player.
+    private void DrawPlayerRow(Photon.Realtime.Player player, string label, Rect row, Texture2D? icon)
     {
-        // Live-section rows skip the icon (clean text-only roster). Spectator-
-        // section rows render the ghost icon tinted by the player's chosen
-        // skin color, matching the in-game ghost appearance.
-        float labelW = drawGhostIcon ? row.width - IconSize - IconPadding : row.width;
+        float labelW = icon != null ? row.width - IconSize - IconPadding : row.width;
         var nameRect = new Rect(row.x, row.y, labelW, row.height);
         GUI.Label(nameRect, label, _rowStyle);
-        if (!drawGhostIcon) return;
+        if (icon == null) return;
 
         var iconRect = new Rect(
             row.xMax - IconSize,
@@ -288,7 +314,7 @@ internal class SpectatorMenuUI : MonoBehaviour
 
         var prevColor = GUI.color;
         GUI.color = GetPlayerSkinColor(player) ?? FallbackGhostColor;
-        if (_ghostTexture != null) GUI.DrawTexture(iconRect, _ghostTexture);
+        GUI.DrawTexture(iconRect, icon);
         GUI.color = prevColor;
     }
 
@@ -346,9 +372,65 @@ internal class SpectatorMenuUI : MonoBehaviour
 
     private void EnsureTextures()
     {
-        if (_ghostTexture == null) _ghostTexture = BuildGhostTexture(40);
+        if (_ghostTexture == null) _ghostTexture = GuiHelpers.BuildGhostTexture(40);
+        if (_climberTexture == null) _climberTexture = BuildClimberTexture(40);
         if (_powerTexture == null) _powerTexture = BuildPowerTexture(40);
         if (_panelBackground == null) _panelBackground = GuiHelpers.BuildSolidTexture(new Color(0.06f, 0.06f, 0.09f, 0.45f));
+    }
+
+    // Procedural climber/person silhouette: head circle on top + trapezoidal
+    // torso that widens at the shoulders and tapers to a narrower waist. Pure
+    // white so the caller can tint via GUI.color (player's skin color).
+    // Same 40x40 footprint as the ghost icon for visual parity between live
+    // and spectator rows.
+    private static Texture2D BuildClimberTexture(int size)
+    {
+        var tex = new Texture2D(size, size, TextureFormat.RGBA32, false)
+        {
+            filterMode = FilterMode.Bilinear,
+            wrapMode = TextureWrapMode.Clamp,
+            hideFlags = HideFlags.HideAndDontSave,
+        };
+        var pixels = new Color[size * size];
+        for (int i = 0; i < pixels.Length; i++) pixels[i] = Color.clear;
+
+        float cx = size / 2f;
+        float headCy = size * 0.22f;     // head center, y from top
+        float headR = size * 0.16f;
+        float bodyTop = size * 0.40f;
+        float bodyBottom = size * 0.92f;
+        float shoulderHalfW = size * 0.34f;
+        float waistHalfW = size * 0.24f;
+
+        for (int row = 0; row < size; row++)
+        {
+            float fy = row + 0.5f;
+            int writeRow = size - 1 - row;
+            for (int x = 0; x < size; x++)
+            {
+                float fx = x + 0.5f;
+                float dx = fx - cx;
+                bool fill = false;
+
+                // Head: circle.
+                float hdy = fy - headCy;
+                if (dx * dx + hdy * hdy <= headR * headR) fill = true;
+
+                // Body: trapezoid that lerps shoulder->waist width.
+                else if (fy >= bodyTop && fy <= bodyBottom)
+                {
+                    float t = (fy - bodyTop) / (bodyBottom - bodyTop);
+                    float halfW = Mathf.Lerp(shoulderHalfW, waistHalfW, t);
+                    if (Mathf.Abs(dx) <= halfW) fill = true;
+                }
+
+                if (fill) pixels[writeRow * size + x] = Color.white;
+            }
+        }
+
+        tex.SetPixels(pixels);
+        tex.Apply();
+        return tex;
     }
 
     // Procedural power icon: a ring with a gap at the top and a vertical bar
@@ -409,96 +491,4 @@ internal class SpectatorMenuUI : MonoBehaviour
         return tex;
     }
 
-    // Draws a small cute ghost: rounded head, straight body, three scallops at
-    // the bottom, two black eye dots. Pure white so we can tint via GUI.color.
-    private static Texture2D BuildGhostTexture(int size)
-    {
-        var tex = new Texture2D(size, size, TextureFormat.RGBA32, false)
-        {
-            filterMode = FilterMode.Bilinear,
-            wrapMode = TextureWrapMode.Clamp,
-            hideFlags = HideFlags.HideAndDontSave,
-        };
-        var pixels = new Color[size * size];
-        for (int i = 0; i < pixels.Length; i++) pixels[i] = Color.clear;
-
-        float cx = size / 2f;
-        float halfW = size * 0.42f;
-        float headBottom = size * 0.45f;
-        float bodyBottom = size * 0.82f;
-        float scallopR = halfW / 2.6f;
-
-        for (int row = 0; row < size; row++)
-        {
-            // Convert row index to "y from top" so coordinates match drawing intent.
-            float fy = row + 0.5f;
-            // Pixel array Y=0 is bottom in Unity; flip when writing.
-            int writeRow = size - 1 - row;
-
-            for (int x = 0; x < size; x++)
-            {
-                float fx = x + 0.5f;
-                float dx = fx - cx;
-                bool fill = false;
-
-                if (fy < headBottom)
-                {
-                    float ady = (fy - headBottom) / headBottom;
-                    float adx = dx / halfW;
-                    if (adx * adx + ady * ady <= 1f) fill = true;
-                }
-                else if (fy < bodyBottom)
-                {
-                    if (Mathf.Abs(dx) <= halfW) fill = true;
-                }
-                else
-                {
-                    // Three scallops along the bottom. Each scallop is a half-disk
-                    // protruding downward from y=bodyBottom.
-                    if (Mathf.Abs(dx) <= halfW)
-                    {
-                        int scallops = 3;
-                        float step = halfW * 2 / scallops;
-                        for (int s = 0; s < scallops; s++)
-                        {
-                            float scx = -halfW + (s + 0.5f) * step;
-                            float sdx = dx - scx;
-                            float sdy = fy - bodyBottom;
-                            if (sdx * sdx + sdy * sdy <= scallopR * scallopR)
-                            {
-                                fill = true;
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                if (fill) pixels[writeRow * size + x] = Color.white;
-            }
-        }
-
-        // Eyes: two small black filled disks.
-        DrawDisk(pixels, size, (int)(size * 0.34f), (int)(size * 0.42f), Mathf.Max(2, size / 14), Color.black);
-        DrawDisk(pixels, size, (int)(size * 0.66f), (int)(size * 0.42f), Mathf.Max(2, size / 14), Color.black);
-
-        tex.SetPixels(pixels);
-        tex.Apply();
-        return tex;
-    }
-
-    private static void DrawDisk(Color[] pixels, int size, int cx, int cy, int r, Color color)
-    {
-        int writeRow0 = size - 1 - cy;
-        for (int dy = -r; dy <= r; dy++)
-        {
-            for (int dx = -r; dx <= r; dx++)
-            {
-                if (dx * dx + dy * dy > r * r) continue;
-                int px = cx + dx;
-                int py = writeRow0 - dy;
-                if (px < 0 || px >= size || py < 0 || py >= size) continue;
-                pixels[py * size + px] = color;
-            }
-        }
-    }
 }

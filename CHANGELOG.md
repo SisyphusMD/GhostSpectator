@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+- **Climber icon on live player rows in the Ghost Spectator panel**, drawn procedurally as a person silhouette and tinted to that player's chosen character skin color. Spectator rows continue to show the ghost icon, also skin-color tinted.
+- **State-aware live-row icon during a run.** Live players whose character is currently in vanilla mid-run dead/passedOut state (waiting to be revived at a statue/effigy/chest) render with the ghost icon instead of the climber silhouette, while still appearing in the LIVE section. They flip back to the climber icon once revived.
+- **Ghost sprite for spectator slots in the post-EndScreen "waiting for others" portrait strip.** Spectator slots now show a ghost shape instead of the vanilla scout sprite, tinted with the spectator's character skin color. Live climbers keep PEAK's vanilla scout sprite.
+
+### Changed
+- **Consistent player ordering across clients.** The Ghost Spectator panel previously sorted the local player first (different per client). Now sorts by Photon `ActorNumber` ascending -- host/first-joiner first, then each player in join order. Every client renders the same player order. The local player's row is still tagged "(you)" in the label.
+- **Mid-run join popup auto-spectates when the live cap is full.** Previously the [Play] / [Spectate] choice always showed even if joining as live would push past the 4-climber cap. Now the joiner's HandleMessage prefix counts live players from the master's Steam-lobby-mirrored `RunRoles` dict; if `live >= LiveCap`, the popup is skipped and the joiner is auto-routed to Spectate. Holds slots for leavers (per-run role lock semantics): a player who leaves mid-run keeps their slot until run end, and a friend invited while the seat is "empty" will spectate.
+
 ## [0.1.1] - 2026-05-19
 
 ### Validated against
