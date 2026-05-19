@@ -8,7 +8,7 @@
     <!-- This is the display name of your mod. -->
     <AssemblyTitle>GhostSpectator</AssemblyTitle>
     <!-- The version number for your assembly, BepInEx plugin, and Thunderstore package. -->
-    <Version>0.1.1</Version>
+    <Version>0.2.0</Version>
   </PropertyGroup>
 
   <!-- ThunderPipe properties -->

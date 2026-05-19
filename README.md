@@ -74,7 +74,7 @@ Suggest having everyone subscribe to the mod once via Thunderstore so the group'
 ## Compatibility
 
 <!-- COMPAT:start -->
-Validated against PEAK build **23203792** as of 2026-05-19 (GhostSpectator 0.1.1).
+Validated against PEAK build **23203792** as of 2026-05-19 (GhostSpectator 0.2.0).
 <!-- COMPAT:end -->
 
 Each release is validated against a specific PEAK build before publishing (see [CHANGELOG.md](CHANGELOG.md) for per-version history). When PEAK updates, an older GhostSpectator may continue to work or may break on specific patch targets; if you hit issues after a PEAK update, check whether a newer GhostSpectator release is out.

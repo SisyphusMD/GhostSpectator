@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-05-19
+
+### Validated against
+
+- PEAK build 23203792
+
 ### Added
 - **Climber icon on live player rows in the Ghost Spectator panel**, drawn procedurally as a person silhouette and tinted to that player's chosen character skin color. Spectator rows continue to show the ghost icon, also skin-color tinted.
 - **State-aware live-row icon during a run.** Live players whose character is currently in vanilla mid-run dead/passedOut state (waiting to be revived at a statue/effigy/chest) render with the ghost icon instead of the climber silhouette, while still appearing in the LIVE section. They flip back to the climber icon once revived.
