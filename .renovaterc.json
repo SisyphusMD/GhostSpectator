@@ -2,12 +2,11 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
   "gitAuthor": "Renovate Bot <renovate@bryantserver.local>",
-  "assignees": ["cody"],
   "prConcurrentLimit": 0,
   "prHourlyLimit": 0,
   "separateMinorPatch": true,
   "fetchChangeLogs": "pr",
-  "enabledManagers": ["nuget", "github-actions", "dotnet-version", "custom.regex"],
+  "enabledManagers": ["nuget", "github-actions", "custom.regex"],
   "includePaths": [
     "src/**/*.csproj",
     "Directory.Build.props",
@@ -63,7 +62,7 @@
     },
     {
       "description": ".NET SDK in global.json",
-      "matchManagers": ["dotnet-version"],
+      "matchDatasources": ["dotnet-version"],
       "addLabels": ["dotnet-sdk"]
     },
     {
