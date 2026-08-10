@@ -56,6 +56,12 @@
       "addLabels": ["nuget"]
     },
     {
+      "description": "These two live only on the BepInEx feed, which is declared as an MSBuild RestoreAdditionalProjectSources — renovate reads registry URLs from nuget.config only, so it would search nuget.org and get no-result. Named individually because BepInEx.AssemblyPublicizer.MSBuild is NOT on that feed.",
+      "matchDatasources": ["nuget"],
+      "matchPackageNames": ["BepInEx.Core", "BepInEx.Analyzers"],
+      "registryUrls": ["https://nuget.bepinex.dev/v3/index.json"]
+    },
+    {
       "description": "GitHub/Forgejo Actions",
       "matchManagers": ["github-actions"],
       "addLabels": ["github-actions"]
