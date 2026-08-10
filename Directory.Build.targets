@@ -46,7 +46,7 @@
   <ItemGroup>
     <PackageReference Include="BepInEx.Core" Version="5.4.21" />
     <!-- In reality BepInEx 5.4.21 ships HarmonyX 2.9 but BepInEx.Core gives us 2.7 -->
-    <PackageReference Include="HarmonyX" Version="2.9.0" />
+    <PackageReference Include="HarmonyX" Version="2.16.1" />
   </ItemGroup>
 
   <!-- NuGet fallback stripped game references -->
