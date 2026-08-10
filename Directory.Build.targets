@@ -4,7 +4,7 @@
     for all project files in subdirectories.
   -->
 
-  <Sdk Name="ThunderPipe.Sdk" Version="0.1.6" />
+  <Sdk Name="ThunderPipe.Sdk" Version="1.0.0" />
 
   <PropertyGroup>
     <!-- Set additional NuGet sources -->
