@@ -92,7 +92,7 @@ jobs:
 
       # Pinned to tag (not SHA) because data.forgejo.org's actions mirror
       # doesn't surface every upstream SHA; build.yml uses the same @v4 ref.
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '10.0.x'
 
