@@ -35,7 +35,7 @@ jobs:
       version: ${{ steps.ver.outputs.version }}
       zip-path: ${{ steps.ver.outputs.zip-path }}
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Verify tag, csproj, CHANGELOG, and zip are consistent
         id: ver
@@ -88,7 +88,7 @@ jobs:
     # is committed regardless. release.sh's "tested in-game?" gate is the
     # human check that should prevent that scenario.
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # Pinned to tag (not SHA) because data.forgejo.org's actions mirror
       # doesn't surface every upstream SHA; build.yml uses the same @v4 ref.
@@ -140,7 +140,7 @@ jobs:
       nas-failures: ${{ steps.reconcile.outputs.nas-failures }}
       github-failures: ${{ steps.reconcile.outputs.github-failures }}
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0  # all tags needed for the reconciliation loop
 
