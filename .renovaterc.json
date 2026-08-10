@@ -34,7 +34,7 @@
       "description": "Track tcli version embedded in shell commands inside workflow files",
       "managerFilePatterns": ["/\\.forgejo/workflows/.+\\.ya?ml$/"],
       "matchStrings": [
-        "# renovate: datasource=(?<datasource>.*?) depName=(?<depName>.*?)\\s+run: .*--version (?<currentValue>\\S+)"
+        "# renovate: datasource=(?<datasource>.*?) depName=(?<depName>.*?)\\s+run: [\\s\\S]*?--version (?<currentValue>\\S+)"
       ]
     },
     {
@@ -45,7 +45,7 @@
         "/thunderstore\\.toml$/"
       ],
       "matchStrings": [
-        "# renovate: datasource=(?<datasource>.*?) depName=(?<depName>.*?)\\s+.*?(?:Version=\"|= \")(?<currentValue>[^\"]+)\""
+        "(?:#|<!--) renovate: datasource=(?<datasource>.*?) depName=(?<depName>[^\\s>]+)[\\s\\S]*?(?:Version=\"|= \")(?<currentValue>[^\"]+)\""
       ]
     }
   ],
