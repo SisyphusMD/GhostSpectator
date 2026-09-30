@@ -90,11 +90,32 @@ jobs:
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
-      # Pinned to tag (not SHA) because data.forgejo.org's actions mirror
-      # doesn't surface every upstream SHA; build.yml uses the same @v4 ref.
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '10.0.x'
+      - name: Install .NET through the NAS artifact cache
+        # setup-dotnet fetches the SDK from Microsoft; this takes the version global.json pins from
+        # the NAS cache instead, and points NuGet at the cache as its only package source.
+        env:
+          CACHE: https://artifacts.nas.bryantserver.com
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 3 "$CACHE/builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.sh" -o "$RUNNER_TEMP/dotnet-install.sh"
+          bash "$RUNNER_TEMP/dotnet-install.sh" --jsonfile global.json --install-dir "$HOME/.dotnet" \
+            --azure-feed "$CACHE/builds.dotnet.microsoft.com/dotnet"
+          {
+            echo "DOTNET_ROOT=$HOME/.dotnet"
+            echo "DOTNET_CLI_TELEMETRY_OPTOUT=1"
+            echo "DOTNET_NOLOGO=1"
+          } >> "$GITHUB_ENV"
+          echo "$HOME/.dotnet" >> "$GITHUB_PATH"
+          mkdir -p "$HOME/.nuget/NuGet"
+          cat > "$HOME/.nuget/NuGet/NuGet.Config" <<EOF
+          <?xml version="1.0" encoding="utf-8"?>
+          <configuration>
+            <packageSources>
+              <clear />
+              <add key="nuget.org" value="$CACHE/api.nuget.org/v3/index.json" protocolVersion="3" />
+            </packageSources>
+          </configuration>
+          EOF
 
       - name: Install tcli (Thunderstore CLI)
         # tcli is Thunderstore's official upload tool. NuGet package id is

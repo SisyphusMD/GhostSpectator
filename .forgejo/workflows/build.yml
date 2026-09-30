@@ -27,13 +27,42 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '10.x'
+      - name: Install .NET through the NAS artifact cache
+        # setup-dotnet fetches the SDK from Microsoft; this takes the version global.json pins from
+        # the NAS cache instead, and points NuGet at the cache as its only package source.
+        env:
+          CACHE: https://artifacts.nas.bryantserver.com
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 3 "$CACHE/builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.sh" -o "$RUNNER_TEMP/dotnet-install.sh"
+          bash "$RUNNER_TEMP/dotnet-install.sh" --jsonfile global.json --install-dir "$HOME/.dotnet" \
+            --azure-feed "$CACHE/builds.dotnet.microsoft.com/dotnet"
+          {
+            echo "DOTNET_ROOT=$HOME/.dotnet"
+            echo "DOTNET_CLI_TELEMETRY_OPTOUT=1"
+            echo "DOTNET_NOLOGO=1"
+          } >> "$GITHUB_ENV"
+          echo "$HOME/.dotnet" >> "$GITHUB_PATH"
+          mkdir -p "$HOME/.nuget/NuGet"
+          cat > "$HOME/.nuget/NuGet/NuGet.Config" <<EOF
+          <?xml version="1.0" encoding="utf-8"?>
+          <configuration>
+            <packageSources>
+              <clear />
+              <add key="nuget.org" value="$CACHE/api.nuget.org/v3/index.json" protocolVersion="3" />
+            </packageSources>
+          </configuration>
+          EOF
 
       - name: Restore (no compile)
         # `dotnet restore` parses the csproj, resolves NuGet packages from the
         # BepInEx + windows10ce feeds, and validates the dependency tree. It does
         # not attempt to compile against game DLLs, so it succeeds without them.
-        run: dotnet restore
+        # The SDK treats RestoreAdditionalProjectSources as a project-local property, so a -p
+        # override cannot reach it; the checkout's copy of the feed list is pointed at the cache.
+        run: |
+          set -euo pipefail
+          sed -i -e 's#https://nuget.bepinex.dev/#https://artifacts.nas.bryantserver.com/nuget.bepinex.dev/#' \
+            -e 's#https://nuget.windows10ce.com/#https://artifacts.nas.bryantserver.com/nuget.windows10ce.com/#' \
+            Directory.Build.targets
+          dotnet restore
