@@ -197,7 +197,7 @@ jobs:
               auth_header="Authorization: token ${token}"
             fi
 
-            http=$(curl -sSL -k -o /tmp/existing.json -w "%{http_code}" \
+            http=$(curl -sSL -o /tmp/existing.json -w "%{http_code}" \
               -H "${auth_header}" \
               "${api}/tags/${tag}")
 
@@ -207,7 +207,7 @@ jobs:
                 echo "  [${label}] ${tag} 200 OK but no .id in response — registry returned a malformed release object" >&2
                 return 1
               fi
-              if curl -fsSL -k -X PATCH \
+              if curl -fsSL -X PATCH \
                   -H "${auth_header}" \
                   -H "Content-Type: application/json" \
                   -d @"${payload_file}" \
@@ -219,7 +219,7 @@ jobs:
               echo "  [${label}] ${tag} update FAILED" >&2
               return 1
             elif [ "$http" = "404" ]; then
-              if curl -fsSL -k -X POST \
+              if curl -fsSL -X POST \
                   -o /tmp/created.json \
                   -H "${auth_header}" \
                   -H "Content-Type: application/json" \
@@ -267,7 +267,7 @@ jobs:
             # asset is missing and re-upload it (duplicates behavior varies
             # per registry).
             local probe_http
-            probe_http=$(curl -sSL -k -o /tmp/release-probe.json -w "%{http_code}" \
+            probe_http=$(curl -sSL -o /tmp/release-probe.json -w "%{http_code}" \
               -H "${auth_header}" "${api}/${rid}")
             if [ "${probe_http:0:1}" != "2" ]; then
               echo "  [${label}] asset existence probe failed (HTTP ${probe_http}); skipping upload to avoid duplicate" >&2
@@ -290,7 +290,7 @@ jobs:
                 "${upload_api}/${rid}/assets?name=${fname}")
             else
               # forgejo
-              http=$(curl -sSL -k -o /tmp/asset-resp.json -w "%{http_code}" \
+              http=$(curl -sSL -o /tmp/asset-resp.json -w "%{http_code}" \
                 -X POST \
                 -H "${auth_header}" \
                 -F "attachment=@${zip}" \
