@@ -31,7 +31,7 @@ jobs:
         # setup-dotnet fetches the SDK from Microsoft; this takes the version global.json pins from
         # the NAS cache instead, and points NuGet at the cache as its only package source.
         env:
-          CACHE: https://artifacts.nas.bryantserver.com
+          CACHE: https://artifacts.lan.bryantserver.com
         run: |
           set -euo pipefail
           curl -fsSL --retry 3 "$CACHE/builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.sh" -o "$RUNNER_TEMP/dotnet-install.sh"
@@ -62,7 +62,7 @@ jobs:
         # override cannot reach it; the checkout's copy of the feed list is pointed at the cache.
         run: |
           set -euo pipefail
-          sed -i -e 's#https://nuget.bepinex.dev/#https://artifacts.nas.bryantserver.com/nuget.bepinex.dev/#' \
-            -e 's#https://nuget.windows10ce.com/#https://artifacts.nas.bryantserver.com/nuget.windows10ce.com/#' \
+          sed -i -e 's#https://nuget.bepinex.dev/#https://artifacts.lan.bryantserver.com/nuget.bepinex.dev/#' \
+            -e 's#https://nuget.windows10ce.com/#https://artifacts.lan.bryantserver.com/nuget.windows10ce.com/#' \
             Directory.Build.targets
           dotnet restore

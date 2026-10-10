@@ -94,7 +94,7 @@ jobs:
         # setup-dotnet fetches the SDK from Microsoft; this takes the version global.json pins from
         # the NAS cache instead, and points NuGet at the cache as its only package source.
         env:
-          CACHE: https://artifacts.nas.bryantserver.com
+          CACHE: https://artifacts.lan.bryantserver.com
         run: |
           set -euo pipefail
           curl -fsSL --retry 3 "$CACHE/builds.dotnet.microsoft.com/dotnet/scripts/v1/dotnet-install.sh" -o "$RUNNER_TEMP/dotnet-install.sh"
@@ -177,7 +177,7 @@ jobs:
           CLUSTER_TOKEN: ${{ secrets.CLUSTER_FORGEJO_REPO_WRITE_PAT }}
           CLUSTER_API: ${{ github.server_url }}/api/v1/repos/${{ github.repository }}/releases
           NAS_TOKEN: ${{ secrets.NAS_FORGEJO_REPO_WRITE_PAT }}
-          NAS_API: https://forgejo.nas.bryantserver.com/api/v1/repos/${{ github.repository }}/releases
+          NAS_API: https://forgejo.lan.bryantserver.com/api/v1/repos/${{ github.repository }}/releases
           GH_TOKEN: ${{ secrets.GH_REPO_WRITE_PAT }}
           GH_API: https://api.github.com/repos/${{ github.repository }}/releases
           GH_UPLOAD_API: https://uploads.github.com/repos/${{ github.repository }}/releases
