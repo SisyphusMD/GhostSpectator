@@ -63,6 +63,12 @@
       "registryUrls": ["https://nuget.bepinex.dev/v3/index.json"]
     },
     {
+      "description": "BepInEx 5.4.21 loads its own HarmonyX 2.9 in the game, so compiling against anything newer binds to APIs that are not there at runtime. Move this only together with BepInEx.Core.",
+      "matchDatasources": ["nuget"],
+      "matchPackageNames": ["HarmonyX"],
+      "enabled": false
+    },
+    {
       "description": "GitHub/Forgejo Actions",
       "matchManagers": ["github-actions"],
       "addLabels": ["github-actions"]
