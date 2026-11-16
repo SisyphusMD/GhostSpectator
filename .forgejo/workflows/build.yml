@@ -18,6 +18,9 @@ concurrency:
 jobs:
   validate:
     name: Restore + project parse
+    # Trusted-ref gate: this runner is self-hosted, so a fork's or an AGit PR's code (an AGit PR
+    # reports this repo as its head) runs only after a maintainer pushes it to a branch here.
+    if: github.event_name != 'pull_request' || (github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.flow == 0)
     runs-on: ubuntu-latest
     permissions:
       contents: read
