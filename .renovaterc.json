@@ -7,6 +7,7 @@
   "platformAutomerge": false,
   "separateMinorPatch": true,
   "fetchChangeLogs": "pr",
+  "prFooter": "Refs #25: standing issue for dependency updates.",
   "enabledManagers": ["nuget", "github-actions", "custom.regex"],
   "includePaths": [
     "src/**/*.csproj",
@@ -51,6 +52,15 @@
     }
   ],
   "packageRules": [
+    {
+      "description": "SisyphusMD/project-rules owns these copied gate workflow pins.",
+      "matchFileNames": [
+        ".forgejo/workflows/ci.yml",
+        ".forgejo/workflows/ai-review.yml",
+        ".forgejo/workflows/issue-archive.yml"
+      ],
+      "enabled": false
+    },
     {
       "description": "NuGet packages",
       "matchDatasources": ["nuget"],
