@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+- Forgejo pull requests get the standard project checks and a private vulnerability reporting
+  address is listed in `SECURITY.md`.
+
 ## [0.2.0] - 2026-05-19
 
 ### Validated against
