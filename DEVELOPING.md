@@ -25,36 +25,32 @@ dotnet build -c Release -v d      # release build, produces a Thunderstore .zip 
 
 PEAK has no public stripped-game-libs NuGet package (unlike Lethal Company's), and the actual game DLLs can't be redistributed. CI on Forgejo therefore only validates that the project file parses and NuGet feeds resolve (`dotnet restore`); the actual build runs on the maintainer's machine where PEAK is installed.
 
-The compromise is **local build + CI publish**: `scripts/release.sh` builds the Thunderstore zip locally, commits it to `releases/`, and pushes a `v*.*.*` tag. The `publish.yml` workflow then fires on that tag and handles all the *publish* steps (Thunderstore upload, forgejo + github release reconciliation, asset attachment) -- none of which need to compile against game DLLs.
+The build runs locally against PEAK. Forgejo tags the reviewed release commit and publishes
+its prebuilt ZIP to Thunderstore and the release mirrors.
 
 ## Releasing
 
-```sh
-# Validates patch targets against your local PEAK, promotes CHANGELOG,
-# bumps csproj, updates README compatibility, builds zip, commits, tags
-# (annotated with the CHANGELOG section), and pushes.
-scripts/release.sh patch    # or 'minor' / 'major'
+Create a Forgejo release issue. From a clean `main`, run the local preparation script.
 
-# Add --dry-run to walk through the flow without committing/pushing:
+```sh
+scripts/release.sh patch
 scripts/release.sh --dry-run patch
 ```
 
-What the script does in order:
+Choose `patch`, `minor` or `major`. Dry run stops after building the ZIP, leaving
+the changed files for inspection.
 
-1. **Preflight.** Refuses to run unless: on `main`, working tree is clean, in sync with `origin/main`, the `[Unreleased]` section exists, and the new tag doesn't already exist.
-2. **PatchValidator CLI.** Runs `src/GhostSpectator.PatchValidatorCli` against your local `PEAK_Data/Managed/` and aborts if any `[HarmonyPatch]` target, field, or property doesn't resolve. Also extracts the Steam appmanifest `buildid` for use in CHANGELOG / README.
-3. **Promote CHANGELOG.** Moves the contents of `[Unreleased]` into a new `[X.Y.Z] - YYYY-MM-DD` section, prefixed with a `### Validated against` block listing the PEAK buildid. Dep commits since the previous tag (matching `(chore|fix)(deps):`) become a `### Dependencies` block.
-4. **Bump csproj `<Version>`** and **update the README `<!-- COMPAT:start --> ... <!-- COMPAT:end -->` block** with the new buildid + date.
-5. **Build the Thunderstore zip** via `dotnet build -c Release` (ThunderPipe.Sdk packs it) and copy to `releases/SisyphusMD-GhostSpectator-X.Y.Z.zip`.
-6. **Interactive gate.** Asks `Have you tested this build in PEAK?` -- Thunderstore is no-delete-only-deprecate, so the human check belongs here. The validator catches patch-target regressions but not gameplay ones.
-7. **Commit, tag (annotated, with the CHANGELOG section as the message), push** the commit and the tag.
-
-Tag push triggers `publish.yml`, which:
-
-- Uploads the zip to Thunderstore via `tcli`.
-- Reconciles releases on cluster forgejo, NAS forgejo, and github (walking ALL `v*.*.*` tags for self-healing -- a release that failed to create on a prior run is picked up the next time this workflow fires).
-- Attaches the zip as a release asset on each registry.
-- Per-registry mirror steps are `continue-on-error`, so a missing secret or pre-mirror-setup repo warns rather than fails the workflow.
+1. The script runs PatchValidator against your PEAK installation and records the Steam build ID.
+2. It promotes the changelog, updates the project and Thunderstore versions, and builds the ZIP in `releases/`.
+3. Test that ZIP in PEAK and confirm the prompt. The script pushes only `release/vX.Y.Z`.
+4. Open a normal PR to `main` that closes the release issue. Include the PEAK build ID and gameplay
+   result and explain that the version updates and ZIP were qualified locally. Merge after checks
+   pass while the branch is up to date. If `main` moves before the merge, close the stale PR,
+   retire its local and remote release branches with approval, then prepare again from current `main`.
+   If the initial branch push was interrupted, retry that push from the prepared local branch.
+5. Dispatch **Publish Release** from `main` with the merged PR number. It verifies the exact
+   merge, version stamps and ZIP manifest, then tags that commit. The existing Publish
+   workflow uploads the ZIP to Thunderstore, Forgejo, the annex and GitHub.
 
 ## Game-code reference
 

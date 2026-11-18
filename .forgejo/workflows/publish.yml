@@ -1,8 +1,6 @@
 name: Publish
 
-# Fires when the local release.sh pushes a v*.*.* tag. Never re-tags from
-# CI -- release.sh is the only path that creates tags. Plain commits to main
-# don't trigger anything; the build.yml workflow handles PR-time sanity.
+# Publish Release tags the reviewed merge containing the locally qualified ZIP.
 #
 # Two parallel jobs after validate:
 #   - thunderstore: uploads the zip via tcli (one-shot; no-delete on TS side)
@@ -46,9 +44,8 @@ jobs:
           VERSION="${TAG#v}"
           ZIP="releases/SisyphusMD-GhostSpectator-${VERSION}.zip"
 
-          # Zip must be present -- release.sh commits it alongside the tag.
-          # If missing, the publish can't proceed and the only fix is to
-          # re-run release.sh (which won't re-use the same tag).
+          # The release PR must contain the locally built ZIP.
+          # Manual tag pushes still have to supply the artifact.
           if [ ! -f "$ZIP" ]; then
             echo "::error::Release zip not found at $ZIP"
             exit 1

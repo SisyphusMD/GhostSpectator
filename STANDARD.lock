@@ -1,0 +1,11 @@
+{
+  "files": {
+    "packaging/changelog-section.sh": "acacfbeca5807ef8e886e7692e5c75c5e60348e0d3f90303cf080eddef59b301",
+    "packaging/check-standard-sync.py": "259d0d7e13c79fdea94f813f292bee02eae55ece1523699590e476fd40c4068c",
+    "packaging/push-tag.sh": "f9150ae249318c704a4bea3826b3d25b06a0d89d084cadbdc6dfea6d4db58bce",
+    "packaging/verify-release-pr.py": "818f3cbe8627192b86478eb2f615f93b37592b4b95bed8db22695c6438b92562"
+  },
+  "source_commit": "4c65c00350872d5243c5438fa7c07c5fea5d47bb",
+  "source_repo": "SisyphusMD/project-rules",
+  "source_tag": "v0.3.1"
+}

@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+- Prepare and review a release branch before tagging the verified merge (#28).
 - Forgejo pull requests get the standard project checks and a private vulnerability reporting
   address is listed in `SECURITY.md`.
 
