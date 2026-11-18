@@ -186,7 +186,7 @@
  },
  {
   "assignees": [],
-  "body": "This issue lists Renovate updates and detected dependencies. Read the [Dependency Dashboard](https://docs.renovatebot.com/key-concepts/dashboard/) docs to learn more.\n\nThis repository currently has no open or pending branches.\n\n## Detected Dependencies\n\n<details><summary>github-actions (2)</summary>\n<blockquote>\n\n<details><summary>.forgejo/workflows/build.yml (1)</summary>\n\n - `actions/checkout v7.0.1@3d3c42e5aac5ba805825da76410c181273ba90b1`\n\n</details>\n\n<details><summary>.forgejo/workflows/publish.yml (3)</summary>\n\n - `actions/checkout v7.0.1@3d3c42e5aac5ba805825da76410c181273ba90b1`\n - `actions/checkout v7.0.1@3d3c42e5aac5ba805825da76410c181273ba90b1`\n - `actions/checkout v7.0.1@3d3c42e5aac5ba805825da76410c181273ba90b1`\n\n</details>\n\n</blockquote>\n</details>\n\n<details><summary>nuget (2)</summary>\n<blockquote>\n\n<details><summary>Directory.Build.targets (6)</summary>\n\n - `BepInEx.Core 5.4.21`\n - `PolySharp 1.17.1`\n - `Hamunii.BepInEx.AutoPlugin 2.1.*`\n - `BepInEx.AssemblyPublicizer.MSBuild 0.4.3`\n - `BepInEx.Analyzers 1.*`\n - `ThunderPipe.Sdk 1.0.0`\n\n</details>\n\n<details><summary>global.json (1)</summary>\n\n - `dotnet-sdk 11.0.100`\n\n</details>\n\n</blockquote>\n</details>\n\n<details><summary>regex (3)</summary>\n<blockquote>\n\n<details><summary>.forgejo/workflows/publish.yml (1)</summary>\n\n - `tcli 0.2.4`\n\n</details>\n\n<details><summary>src/GhostSpectator/GhostSpectator.csproj (1)</summary>\n\n - `BepInEx/BepInExPack_PEAK 5.4.75301`\n\n</details>\n\n<details><summary>thunderstore.toml (1)</summary>\n\n - `BepInEx/BepInExPack_PEAK 5.4.75301`\n\n</details>\n\n</blockquote>\n</details>\n\n",
+  "body": "This issue lists Renovate updates and detected dependencies. Read the [Dependency Dashboard](https://docs.renovatebot.com/key-concepts/dashboard/) docs to learn more.\n\nThis repository currently has no open or pending branches.\n\n## Detected Dependencies\n\n<details><summary>github-actions (3)</summary>\n<blockquote>\n\n<details><summary>.forgejo/workflows/build.yml (1)</summary>\n\n - `actions/checkout v7.0.1@3d3c42e5aac5ba805825da76410c181273ba90b1`\n\n</details>\n\n<details><summary>.forgejo/workflows/publish-release.yml (1)</summary>\n\n - `actions/checkout v7.0.1@3d3c42e5aac5ba805825da76410c181273ba90b1`\n\n</details>\n\n<details><summary>.forgejo/workflows/publish.yml (3)</summary>\n\n - `actions/checkout v7.0.1@3d3c42e5aac5ba805825da76410c181273ba90b1`\n - `actions/checkout v7.0.1@3d3c42e5aac5ba805825da76410c181273ba90b1`\n - `actions/checkout v7.0.1@3d3c42e5aac5ba805825da76410c181273ba90b1`\n\n</details>\n\n</blockquote>\n</details>\n\n<details><summary>nuget (2)</summary>\n<blockquote>\n\n<details><summary>Directory.Build.targets (6)</summary>\n\n - `BepInEx.Core 5.4.21`\n - `PolySharp 1.17.1`\n - `Hamunii.BepInEx.AutoPlugin 2.1.*`\n - `BepInEx.AssemblyPublicizer.MSBuild 0.4.3`\n - `BepInEx.Analyzers 1.*`\n - `ThunderPipe.Sdk 1.0.0`\n\n</details>\n\n<details><summary>global.json (1)</summary>\n\n - `dotnet-sdk 11.0.100`\n\n</details>\n\n</blockquote>\n</details>\n\n<details><summary>regex (3)</summary>\n<blockquote>\n\n<details><summary>.forgejo/workflows/publish.yml (1)</summary>\n\n - `tcli 0.2.4`\n\n</details>\n\n<details><summary>src/GhostSpectator/GhostSpectator.csproj (1)</summary>\n\n - `BepInEx/BepInExPack_PEAK 5.4.75301`\n\n</details>\n\n<details><summary>thunderstore.toml (1)</summary>\n\n - `BepInEx/BepInExPack_PEAK 5.4.75301`\n\n</details>\n\n</blockquote>\n</details>\n\n",
   "closed_at": null,
   "comments": [],
   "created_at": "2026-08-09T18:36:16-07:00",
@@ -504,7 +504,7 @@
   "closed_at": "2026-11-17T14:02:24-08:00",
   "comments": [],
   "created_at": "2026-11-17T14:00:45-08:00",
-  "head": "ci/adopt-project-rules",
+  "head": "refs/pull/27/head",
   "kind": "pull",
   "labels": [],
   "merge_commit_sha": "5d8aa89b45f2c55b68904f0b65e9d08b25dc63d9",
@@ -514,6 +514,121 @@
   "reviews": [],
   "state": "closed",
   "title": "Adopt the SisyphusMD project rules",
+  "user": "cody"
+ },
+ {
+  "assignees": [],
+  "body": "Part of SisyphusMD/project-rules#86. Preserve PatchValidator, the local PEAK gameplay check, and the release ZIP. Open the changelog/version/zip commit as a pull request, then tag the exact merged release by maintainer dispatch.\n\nDepends on SisyphusMD/project-rules#97.",
+  "closed_at": "2026-11-17T18:53:29-08:00",
+  "comments": [
+   {
+    "body": "Codex is preparing the stable release conversion. Keep local PEAK validation, gameplay confirmation and the tracked ZIP. Local preparation will push only the release branch, with a normal Forgejo PR. Publish Release will verify its exact merge before tagging.",
+    "created_at": "2026-11-17T18:17:10-08:00",
+    "id": 36776,
+    "updated_at": "2026-11-17T18:17:10-08:00",
+    "user": "cody"
+   }
+  ],
+  "created_at": "2026-11-17T14:18:45-08:00",
+  "kind": "issue",
+  "labels": [
+   "status:blocked",
+   "type:feature"
+  ],
+  "milestone": null,
+  "number": 28,
+  "state": "closed",
+  "title": "Release through a merged pull request",
+  "user": "cody"
+ },
+ {
+  "assignees": [],
+  "base": "main",
+  "body": "Closes #28.\n\nPreserves local PatchValidator and an explicit confirmation of gameplay with the exact ZIP. Preparation pushes only a release branch. Publish Release checks the final tree against the prepared source and validates the package and version stamps before pushing the tag. The existing Thunderstore and release mirror publishers still run from the tag.\n\nLocal automated test: a bare Git origin and a stub PEAK build prove rejecting confirmation never pushes and confirming pushes only the candidate branch, with its qualified source recorded. The real PEAK gameplay check remains a release-time activity.\n\nLarge diff: The qualification workflow, tag-only publisher, verified upstream helpers, and their tests must change together to keep a working release path in this commit.",
+  "closed_at": "2026-11-17T18:53:29-08:00",
+  "comments": [
+   {
+    "body": "<!-- ai-review -->\n**AI review** of `82d1ae6405`: The PR restructures the release flow so that local preparation pushes only a release branch, a normal PR is reviewed and merged, and a dispatchable Publish Release workflow verifies the exact merge before tagging. The earlier committed .pyc file has been removed. The vendored helpers, workflow logic, and local script changes are consistent and well-tested for the local path.\n\n### Resolved\n\n- **F1** (suggestion, `tests/__pycache__/test_release_preparation.cpython-311.pyc:1`) Compiled bytecode committed to repository: The .pyc file is no longer present in the diff. The .gitignore entry for __pycache__/ is in place and the file has been removed from the commit. (Not blocking: it did not cite a changed file and line.)\n\n\nDisagree? Reply on this PR with your reasoning; the reviewer re-reads every reply.\n<!-- ai-review-state W3siaWQiOiAiRjEiLCAiZmlsZSI6ICJ0ZXN0cy9fX3B5Y2FjaGVfXy90ZXN0X3JlbGVhc2VfcHJlcGFyYXRpb24uY3B5dGhvbi0zMTEucHljIiwgImxpbmUiOiAxLCAic2V2ZXJpdHkiOiAic3VnZ2VzdGlvbiIsICJzdGF0dXMiOiAicmVzb2x2ZWQiLCAidGl0bGUiOiAiQ29tcGlsZWQgYnl0ZWNvZGUgY29tbWl0dGVkIHRvIHJlcG9zaXRvcnkiLCAiZGV0YWlsIjogIlRoZSAucHljIGZpbGUgaXMgbm8gbG9uZ2VyIHByZXNlbnQgaW4gdGhlIGRpZmYuIFRoZSAuZ2l0aWdub3JlIGVudHJ5IGZvciBfX3B5Y2FjaGVfXy8gaXMgaW4gcGxhY2UgYW5kIHRoZSBmaWxlIGhhcyBiZWVuIHJlbW92ZWQgZnJvbSB0aGUgY29tbWl0LiAoTm90IGJsb2NraW5nOiBpdCBkaWQgbm90IGNpdGUgYSBjaGFuZ2VkIGZpbGUgYW5kIGxpbmUuKSIsICJyZXNwb25zZSI6ICIifV0= -->",
+    "created_at": "2026-11-17T18:35:31-08:00",
+    "id": 36787,
+    "updated_at": "2026-11-17T18:52:01-08:00",
+    "user": "forgejo-actions"
+   }
+  ],
+  "created_at": "2026-11-17T18:32:17-08:00",
+  "head": "refs/pull/29/head",
+  "kind": "pull",
+  "labels": [],
+  "merge_commit_sha": "bbca3a19aac4026c3a384b7916ed84ac122f65fd",
+  "merged": true,
+  "milestone": null,
+  "number": 29,
+  "reviews": [],
+  "state": "closed",
+  "title": "Publish the verified release pull request",
+  "user": "cody"
+ },
+ {
+  "assignees": [],
+  "body": "Part of SisyphusMD/project-rules#75. Verify each required Forgejo context rejects a deliberate failure on a disposable draft candidate. PR #29 provides the positive contexts from the adopted workflows. The draft must never be merged, tagged, or published. Record precise contexts and diagnostics before changing protection. The new release workflow still needs local licensed PEAK gameplay and a live release proof.",
+  "closed_at": "2026-11-17T20:41:07-08:00",
+  "comments": [
+   {
+    "body": "Draft #31 is running negative proofs on 22ac192dbd61cee47a51eae06b11cd7affcd9ccf. The pinned gitleaks binary rejected the synthetic fixture locally, and the project file produces the intended XML parse error. Never merge or tag this draft.",
+    "created_at": "2026-11-17T19:24:40-08:00",
+    "id": 36910,
+    "updated_at": "2026-11-17T19:24:40-08:00",
+    "user": "cody"
+   },
+   {
+    "body": "Draft #31 at 7f3c7a4edda4c7a9ea9e307e2e3ae8464ae474ed produced all eight expected failure diagnostics, including the exact project parse error and the AI review diff-size refusal. PR #29 supplied the positive required contexts. Draft #31 is closed unmerged. Protection still awaits the licensed PEAK release proof for the new tag-only path.",
+    "created_at": "2026-11-17T19:49:26-08:00",
+    "id": 36965,
+    "updated_at": "2026-11-17T19:49:26-08:00",
+    "user": "cody"
+   },
+   {
+    "body": "Proof complete. PR #29 passed every shared gate at exact head 82d1ae6405a2f74107bbd54fd10c7b5d0bad3227. Draft #31 recorded each expected rejection at 7f3c7a4edda4c7a9ea9e307e2e3ae8464ae474ed and was closed without merging. The parent adoption issue still tracks the live release dependency and branch protection.",
+    "created_at": "2026-11-17T20:41:06-08:00",
+    "id": 37086,
+    "updated_at": "2026-11-17T20:41:06-08:00",
+    "user": "cody"
+   }
+  ],
+  "created_at": "2026-11-17T19:17:23-08:00",
+  "kind": "issue",
+  "labels": [],
+  "milestone": null,
+  "number": 30,
+  "state": "closed",
+  "title": "Prove the required checks before protecting main",
+  "user": "cody"
+ },
+ {
+  "assignees": [],
+  "base": "main",
+  "body": "Do not merge. This is a disposable draft with deliberate lint, diff size, untested code, synthetic secret-scanner and project-parse failures. The issue reference is omitted for the Issue link negative check. The fixture exists only to record the diagnostics before protection is enabled.",
+  "closed_at": "2026-11-17T19:49:26-08:00",
+  "comments": [
+   {
+    "body": "<!-- ai-review -->\n**AI review** of `22ac192dbd`: This is an explicitly WIP, do-not-merge test fixture PR designed to validate that the required CI checks (Issue link, Diff size, Lint, Secrets, project-parse) correctly reject bad input. Every 'problem' in the diff is an intentional test condition, and the PR is not meant to ship.\n\nNo findings.\n\nDisagree? Reply on this PR with your reasoning; the reviewer re-reads every reply.\n<!-- ai-review-state W10= -->",
+    "created_at": "2026-11-17T19:25:04-08:00",
+    "id": 36912,
+    "updated_at": "2026-11-17T19:25:04-08:00",
+    "user": "forgejo-actions"
+   }
+  ],
+  "created_at": "2026-11-17T19:24:39-08:00",
+  "head": "proof/required-check-failures",
+  "kind": "pull",
+  "labels": [],
+  "merge_commit_sha": null,
+  "merged": false,
+  "milestone": null,
+  "number": 31,
+  "reviews": [],
+  "state": "closed",
+  "title": "WIP: Disposable draft to prove required checks",
   "user": "cody"
  }
 ]

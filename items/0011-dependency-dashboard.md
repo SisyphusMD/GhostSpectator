@@ -9,10 +9,16 @@ This repository currently has no open or pending branches.
 
 ## Detected Dependencies
 
-<details><summary>github-actions (2)</summary>
+<details><summary>github-actions (3)</summary>
 <blockquote>
 
 <details><summary>.forgejo/workflows/build.yml (1)</summary>
+
+ - `actions/checkout v7.0.1@3d3c42e5aac5ba805825da76410c181273ba90b1`
+
+</details>
+
+<details><summary>.forgejo/workflows/publish-release.yml (1)</summary>
 
  - `actions/checkout v7.0.1@3d3c42e5aac5ba805825da76410c181273ba90b1`
 

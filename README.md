@@ -31,3 +31,7 @@ Generated nightly from the primary Forgejo; do not edit. `json/` holds the full 
 | 25 | issue | open | [Dependency updates (Renovate)](items/0025-dependency-updates-renovate.md) |
 | 26 | issue | closed | [Bring this repo under the project rules](items/0026-bring-this-repo-under-the-project-rules.md) |
 | 27 | pull | closed | [Adopt the SisyphusMD project rules](items/0027-adopt-the-sisyphusmd-project-rules.md) |
+| 28 | issue | closed | [Release through a merged pull request](items/0028-release-through-a-merged-pull-request.md) |
+| 29 | pull | closed | [Publish the verified release pull request](items/0029-publish-the-verified-release-pull-request.md) |
+| 30 | issue | closed | [Prove the required checks before protecting main](items/0030-prove-the-required-checks-before-protecting-main.md) |
+| 31 | pull | closed | [WIP: Disposable draft to prove required checks](items/0031-wip-disposable-draft-to-prove-required-checks.md) |
