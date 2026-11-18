@@ -237,3 +237,6 @@ Config.Build.user.props
 # /src/UnityProject/Assets/*
 # !/src/UnityProject/Assets/
 # !/src/UnityProject/Assets/_Mod/
+
+# Python release-flow test bytecode
+__pycache__/
