@@ -1,5 +1,6 @@
-# The canonical gate scripts follow project-rules' Ruff configuration.
+# The copied gate and release scripts follow project-rules' Ruff configuration.
 extend-exclude = [
+  "packaging",
   ".forgejo/scripts/ai-review.py",
   ".forgejo/scripts/diff-size.py",
   ".forgejo/scripts/issue-archive.py",

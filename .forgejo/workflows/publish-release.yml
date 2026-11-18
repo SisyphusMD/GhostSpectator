@@ -1,0 +1,103 @@
+name: Publish Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      pull_request:
+        description: "Merged release pull request number"
+        required: true
+        type: string
+
+concurrency:
+  group: release-cut
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Verify and tag the merged release
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify the exact merged release
+        id: release
+        env:
+          PR: ${{ inputs.pull_request }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          [[ "$PR" =~ ^[1-9][0-9]*$ ]] || { echo "::error::Enter the merged release PR number"; exit 1; }
+          git fetch --tags origin refs/heads/main:refs/remotes/origin/main
+          main=$(git rev-parse refs/remotes/origin/main)
+          pr=$(curl -fsS --max-time 30 -H "Authorization: token $TOKEN" \
+            "$GITHUB_SERVER_URL/api/v1/repos/$GITHUB_REPOSITORY/pulls/$PR")
+          jq -e '.flow == 0' <<< "$pr" >/dev/null
+          verified=$(python3 -I packaging/verify-release-pr.py "$GITHUB_REPOSITORY" "$PR" "$main" <<< "$pr")
+          candidate=$(jq -er '.head.sha' <<< "$pr")
+          merge=$(sed -n 's/^commit=//p' <<< "$verified")
+          version=$(sed -n 's/^tag=v//p' <<< "$verified")
+          base=$(git rev-parse "$candidate^")
+          [ "$(git rev-list --parents -n 1 "$candidate")" = "$candidate $base" ]
+          subject=$(git show -s --format=%s "$candidate")
+          [ "$subject" = "release: $version (prepared from $base)" ] && [ "$base" = "$(git rev-parse "$merge^")" ] \
+            || { echo "::error::The prepared ZIP is stale. Prepare the release again."; exit 1; }
+          paths=$(git diff --name-only "$base" "$candidate")
+          while IFS= read -r file; do
+            case "$file" in
+              CHANGELOG.md|README.md|src/GhostSpectator/GhostSpectator.csproj|thunderstore.toml) ;;
+              "releases/SisyphusMD-GhostSpectator-$version.zip") ;;
+              *) echo "::error::Unexpected change in release PR: $file"; exit 1 ;;
+            esac
+          done <<< "$paths"
+          printf '%s\n' "$verified" >> "$GITHUB_OUTPUT"
+
+      - name: Check the qualified package and version stamps
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+          MERGE_COMMIT: ${{ steps.release.outputs.commit }}
+        run: |
+          set -euo pipefail
+          checkout=$(mktemp -d "$RUNNER_TEMP/release-tree.XXXXXX")
+          git worktree add --detach "$checkout" "$MERGE_COMMIT"
+          trap 'git worktree remove "$checkout"' EXIT
+          version="${TAG#v}"
+          python3 -I - "$version" "$checkout" <<'PYTHON'
+          import json
+          import sys
+          import tomllib
+          import xml.etree.ElementTree as ET
+          import zipfile
+          from pathlib import Path
+
+          version = sys.argv[1]
+          root = Path(sys.argv[2])
+          project = ET.parse(root / "src/GhostSpectator/GhostSpectator.csproj")
+          stamps = [node.text for node in project.findall(".//Version")]
+          metadata = tomllib.loads((root / "thunderstore.toml").read_text())
+          zip_path = root / "releases" / f"SisyphusMD-GhostSpectator-{version}.zip"
+          with zipfile.ZipFile(zip_path) as archive:
+              manifest = json.loads(archive.read("manifest.json"))
+          if stamps != [version] or metadata["package"]["versionNumber"] != version or manifest["version_number"] != version:
+              sys.exit("Version mismatch in the qualified project, Thunderstore metadata or release ZIP")
+          PYTHON
+          bash "$checkout/packaging/changelog-section.sh" "$version" > "$RUNNER_TEMP/release-notes.md"
+
+      - name: Push only the verified release tag
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+          MERGE_COMMIT: ${{ steps.release.outputs.commit }}
+          TOKEN: ${{ secrets.CLUSTER_FORGEJO_REPO_WRITE_PAT }}
+          GH_REPO_READ_PAT: ${{ secrets.GH_REPO_READ_PAT }}
+        run: |
+          set -euo pipefail
+          if ! git show-ref --verify --quiet "refs/tags/$TAG"; then
+            git -c user.name='forgejo-actions[bot]' \
+              -c user.email='forgejo-actions[bot]@users.noreply.bryantserver.com' \
+              tag -a --cleanup=verbatim -F "$RUNNER_TEMP/release-notes.md" "$TAG" "$MERGE_COMMIT"
+          fi
+          bash packaging/push-tag.sh "$TAG" "$TOKEN" --merged-commit "$MERGE_COMMIT"

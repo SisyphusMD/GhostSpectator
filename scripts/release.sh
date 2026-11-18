@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# scripts/release.sh -- cut and publish a GhostSpectator release.
+# scripts/release.sh -- prepare a GhostSpectator release branch.
 #
 # Usage:
 #   scripts/release.sh <patch|minor|major>
@@ -8,7 +8,7 @@
 #
 # Why local: PEAK has no public stripped-game-libs package, so CI can't
 # compile the mod (the workflows have no Assembly-CSharp.dll). This script
-# owns build + version bump + commit + tag locally. The tag push then
+# builds, qualifies, and commits the candidate locally. The later tag push
 # triggers .forgejo/workflows/publish.yml, which (a) uploads the prebuilt
 # zip from releases/ to Thunderstore, and (b) reconciles forgejo / github
 # releases with the same zip attached.
@@ -19,7 +19,7 @@
 #   3. Compute next version, promote CHANGELOG, bump csproj + README compat
 #   4. dotnet build -c Release -> produces Thunderstore zip
 #   5. Copy zip to releases/ (tracked, gitignored covers artifacts/)
-#   6. Commit, tag annotated with the CHANGELOG section, push commit + tag
+#   6. Confirm gameplay, then commit and push only the release branch
 
 set -euo pipefail
 
@@ -48,9 +48,9 @@ Usage: $0 [--dry-run] <patch|minor|major>
 
 Cuts a GhostSpectator release: validates patches, promotes CHANGELOG,
 bumps csproj, updates README compatibility line, builds the Thunderstore
-zip, commits, tags, and pushes. The tag push triggers the publish workflow.
+zip, confirms gameplay, and pushes the candidate branch for a Forgejo PR.
 
-  --dry-run    Run all steps EXCEPT commit/tag/push. Leaves the working
+  --dry-run    Run all steps through the build. Leaves the working
                tree dirty for inspection. Revert with 'git restore .' or
                'git stash'.
 
@@ -117,6 +117,7 @@ esac
 VERSION="${MAJOR}.${MINOR}.${PATCH}"
 TAG="v${VERSION}"
 DATE="$(date -u +%Y-%m-%d)"
+RELEASE_BRANCH="release/$TAG"
 
 info "version: ${PREV_VERSION} -> ${VERSION} (${TAG})"
 
@@ -128,6 +129,14 @@ if grep -qE "^## \[${VERSION}\]" CHANGELOG.md; then
 fi
 if git rev-parse -q --verify "refs/tags/${TAG}" >/dev/null 2>&1; then
     die "tag ${TAG} already exists"
+fi
+
+if [ "$DRY_RUN" -eq 0 ]; then
+    if git show-ref --verify --quiet "refs/heads/$RELEASE_BRANCH"; then
+        die "local branch $RELEASE_BRANCH already exists"
+    fi
+    candidate=$(git ls-remote origin "refs/heads/$RELEASE_BRANCH")
+    [ -z "$candidate" ] || die "remote branch $RELEASE_BRANCH already exists"
 fi
 
 # ---------------------------------------------------------------------------
@@ -303,57 +312,33 @@ cp "${BUILT_ZIP}" "${RELEASE_ZIP}"
 info "  -> ${RELEASE_ZIP}"
 
 # ---------------------------------------------------------------------------
-# Extract the new CHANGELOG section for use as the tag annotation
-# ---------------------------------------------------------------------------
-
-# Escape regex metacharacters in the version (the dots) before passing to awk.
-V_RE="$(printf '%s' "${VERSION}" | sed 's/\./\\./g')"
-SECTION_FILE="$(mktemp -t ghostspec-release.XXXXXX)"
-awk -v v="${V_RE}" '
-    $0 ~ "^## \\[" v "\\]" { in_section=1; next }
-    in_section && /^## \[/ { exit }
-    in_section { print }
-' CHANGELOG.md > "${SECTION_FILE}"
-trap 'rm -f "${SECTION_FILE}"' EXIT
-
-# ---------------------------------------------------------------------------
 # Show diff + confirm
 # ---------------------------------------------------------------------------
 
 echo
 echo "==================== DIFF ===================="
-git --no-pager diff -- CHANGELOG.md src/GhostSpectator/GhostSpectator.csproj README.md || true
+git --no-pager diff -- CHANGELOG.md src/GhostSpectator/GhostSpectator.csproj thunderstore.toml README.md
 echo "==============================================="
 echo
 echo "New release: ${TAG}  (PEAK build ${PEAK_BUILDID})"
 echo "Zip:         ${RELEASE_ZIP}  ($(wc -c < "${RELEASE_ZIP}" | tr -d ' ') bytes)"
 echo
-echo "Tag message preview:"
-echo "---"
-cat "${SECTION_FILE}"
-echo "---"
-echo
-
 if [ "${DRY_RUN}" -eq 1 ]; then
     info "--dry-run: stopping before commit. Run 'git restore .' + 'rm ${RELEASE_ZIP}' to revert."
     exit 0
 fi
 
-# ---------------------------------------------------------------------------
-# Commit, tag, push
-# ---------------------------------------------------------------------------
 
-info "committing"
-git add CHANGELOG.md src/GhostSpectator/GhostSpectator.csproj thunderstore.toml README.md "${RELEASE_ZIP}"
-git commit -m "release: ${VERSION}"
+read -r -p "Have you tested this exact ZIP in PEAK build $PEAK_BUILDID? Type yes to continue: " confirmed \
+    && [ "$confirmed" = yes ] || die "gameplay confirmation required"
 
-info "tagging (annotated, with CHANGELOG section as message)"
-git tag -a "${TAG}" -F "${SECTION_FILE}"
+remote_main=$(git ls-remote --exit-code origin refs/heads/main | cut -f1)
+[ "$remote_main" = "$LOCAL_HEAD" ] || die "main advanced during preparation. Restart from current main."
 
-info "pushing commit"
-git push origin main
+git checkout -b "$RELEASE_BRANCH"
+git add -- CHANGELOG.md src/GhostSpectator/GhostSpectator.csproj thunderstore.toml README.md "$RELEASE_ZIP"
+git commit -m "release: $VERSION (prepared from $LOCAL_HEAD)"
+git push origin "HEAD:refs/heads/$RELEASE_BRANCH"
 
-info "pushing tag (triggers publish workflow)"
-git push origin "${TAG}"
-
-info "done. tag ${TAG} pushed; publish workflow should fire on forgejo shortly."
+info "Open a PR from $RELEASE_BRANCH into main. Include the release issue and PEAK build $PEAK_BUILDID."
+info "After it merges, dispatch Publish Release with the PR number."
