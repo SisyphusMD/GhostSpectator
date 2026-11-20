@@ -35,3 +35,7 @@ Generated nightly from the primary Forgejo; do not edit. `json/` holds the full 
 | 29 | pull | closed | [Publish the verified release pull request](items/0029-publish-the-verified-release-pull-request.md) |
 | 30 | issue | closed | [Prove the required checks before protecting main](items/0030-prove-the-required-checks-before-protecting-main.md) |
 | 31 | pull | closed | [WIP: Disposable draft to prove required checks](items/0031-wip-disposable-draft-to-prove-required-checks.md) |
+| 32 | issue | closed | [AI review: take the 40,000-token output cap and verdict-parse fix from project-rules](items/0032-ai-review-take-the-40-000-token-output-cap-and-verdict-parse.md) |
+| 33 | pull | closed | [AI review: 40,000-token output cap and verdict-parse fix](items/0033-ai-review-40-000-token-output-cap-and-verdict-parse-fix.md) |
+| 34 | issue | closed | [AI review: take the 40-minute deadline and 45-minute job limit from project-rules](items/0034-ai-review-take-the-40-minute-deadline-and-45-minute-job-limi.md) |
+| 35 | pull | closed | [AI review: 40-minute deadline inside a 45-minute job](items/0035-ai-review-40-minute-deadline-inside-a-45-minute-job.md) |
