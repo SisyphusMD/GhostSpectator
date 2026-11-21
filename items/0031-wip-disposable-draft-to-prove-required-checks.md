@@ -2,7 +2,7 @@
 
 - Kind: pull, state: closed, by cody, created 2026-11-17T19:24:39-08:00
 - Labels: none; milestone: none
-- proof/required-check-failures -> main, merged: False
+- refs/pull/31/head -> main, merged: False
 
 Do not merge. This is a disposable draft with deliberate lint, diff size, untested code, synthetic secret-scanner and project-parse failures. The issue reference is omitted for the Issue link negative check. The fixture exists only to record the diagnostics before protection is enabled.
 

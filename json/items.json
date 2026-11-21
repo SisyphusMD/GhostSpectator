@@ -619,7 +619,7 @@
    }
   ],
   "created_at": "2026-11-17T19:24:39-08:00",
-  "head": "proof/required-check-failures",
+  "head": "refs/pull/31/head",
   "kind": "pull",
   "labels": [],
   "merge_commit_sha": null,
