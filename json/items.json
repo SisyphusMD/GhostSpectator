@@ -718,5 +718,109 @@
   "state": "closed",
   "title": "AI review: 40-minute deadline inside a 45-minute job",
   "user": "cody"
+ },
+ {
+  "assignees": [],
+  "body": "Copy SisyphusMD/project-rules#116 (merged in project-rules #117): `ai-review.yml` here still starts a review on any signed-in account's PR comment, so an outside account can queue up to 45-minute runs on the Studio model. The canonical file now runs the comment path only for someone who can push or wrote the PR.\n\nPlan: replace `.forgejo/workflows/ai-review.yml` with the canonical file, unchanged (this copy matched the previous canonical exactly).\n\nRequested by Cody 2026-11-21 (\"yes to all\").",
+  "closed_at": "2026-11-21T12:17:43-08:00",
+  "comments": [
+   {
+    "body": "Status: merged in #37, verified on main (the canonical gate from SisyphusMD/project-rules#117). A PR comment now starts an AI review only for someone who can push here or wrote the PR. Nothing left on this issue; the AGit PR residual is tracked on SisyphusMD/project-rules#57.",
+    "created_at": "2026-11-21T12:18:30-08:00",
+    "id": 41812,
+    "updated_at": "2026-11-21T12:18:30-08:00",
+    "user": "cody"
+   }
+  ],
+  "created_at": "2026-11-21T11:50:20-08:00",
+  "kind": "issue",
+  "labels": [
+   "status:in-progress",
+   "type:bug"
+  ],
+  "milestone": null,
+  "number": 36,
+  "state": "closed",
+  "title": "AI review runs on any signed-in user's PR comment",
+  "user": "cody"
+ },
+ {
+  "assignees": [],
+  "base": "main",
+  "body": "Closes #36\n\nCopies the canonical `ai-review.yml` from SisyphusMD/project-rules #117 unchanged. A PR comment now starts an AI review only when its author can push to this repo or wrote the PR; before, any signed-in account's comment queued a run of up to 45 minutes on the Studio model. `pull_request_target` runs are unchanged. The gate reads `github.event.repository.permissions.push`, which Forgejo fills with the commenter's own permission, checked against stored run payloads (bots with push still start reviews).\n\nThe test that rejects an outside commenter lives with the canonical file: project-rules `tests/test_ai_review_gate.py`.",
+  "closed_at": "2026-11-21T12:17:42-08:00",
+  "comments": [
+   {
+    "body": "<!-- ai-review -->\n**AI review** of `954c94adfd`: The PR restricts the comment-triggered AI review path to users with push permission or the PR author, closing a resource-abuse vector where any signed-in account could queue 45-minute model runs. The diff is minimal, the logic is sound, the pull_request_target path is untouched, and the gate test lives in the canonical project-rules repo as expected for a verbatim copy.\n\nNo findings.\n\nDisagree? Reply on this PR with your reasoning; the reviewer re-reads every reply.\n<!-- ai-review-state W10= -->",
+    "created_at": "2026-11-21T11:53:55-08:00",
+    "id": 41723,
+    "updated_at": "2026-11-21T11:53:55-08:00",
+    "user": "forgejo-actions"
+   }
+  ],
+  "created_at": "2026-11-21T11:50:21-08:00",
+  "head": "refs/pull/37/head",
+  "kind": "pull",
+  "labels": [],
+  "merge_commit_sha": "0bc022691b36274a248a1644589d154ef6ea17af",
+  "merged": true,
+  "milestone": null,
+  "number": 37,
+  "reviews": [],
+  "state": "closed",
+  "title": "fix(ai-review): start a review from a PR comment only for pushers and the PR author",
+  "user": "cody"
+ },
+ {
+  "assignees": [],
+  "body": "Copy `.forgejo/scripts/ai-review.py` from canonical SisyphusMD/project-rules 64b857c, byte for byte (connect retry, malformed-answer re-ask, retry keeps first answer findings). In `.forgejo/workflows/ai-review.yml`, the actions/checkout step gets `ref: ${{ github.sha }}` and `persist-credentials: false`, and the review step env gets `BOT_LOGIN: forgejo-actions` (the #118 edits). No other files change apart from a CHANGELOG bullet where the repo keeps one.\n\nPart of SisyphusMD/project-rules#113",
+  "closed_at": "2026-11-21T20:21:55-08:00",
+  "comments": [
+   {
+    "body": "Done in PR #39, merged as 0ca1734: ai-review.py and ai-review.yml are canonical 64b857c; CHANGELOG bullet added.",
+    "created_at": "2026-11-21T20:22:09-08:00",
+    "id": 42380,
+    "updated_at": "2026-11-21T20:22:09-08:00",
+    "user": "cody"
+   }
+  ],
+  "created_at": "2026-11-21T19:25:57-08:00",
+  "kind": "issue",
+  "labels": [
+   "status:in-progress",
+   "type:chore"
+  ],
+  "milestone": null,
+  "number": 38,
+  "state": "closed",
+  "title": "chore(ci): bring the AI review copy up to canonical project-rules 64b857c",
+  "user": "cody"
+ },
+ {
+  "assignees": [],
+  "base": "main",
+  "body": "Closes #38\n\nCopies the canonical AI review script and the two #118 workflow edits from SisyphusMD/project-rules 64b857c (part of SisyphusMD/project-rules#113).",
+  "closed_at": "2026-11-21T20:21:55-08:00",
+  "comments": [
+   {
+    "body": "<!-- ai-review -->\n**AI review** of `2735a010e2`: Faithful byte-for-byte copy of the canonical AI review script from project-rules 64b857c plus the two #118 workflow edits (pinned checkout ref, persist-credentials, BOT_LOGIN) and a CHANGELOG bullet, exactly as issue #38 specifies. No bugs, security issues, or rule violations found.\n\nNo findings.\n\nDisagree? Reply on this PR with your reasoning; the reviewer re-reads every reply.\n<!-- ai-review-state W10= -->",
+    "created_at": "2026-11-21T20:15:01-08:00",
+    "id": 42353,
+    "updated_at": "2026-11-21T20:15:01-08:00",
+    "user": "forgejo-actions"
+   }
+  ],
+  "created_at": "2026-11-21T20:13:33-08:00",
+  "head": "refs/pull/39/head",
+  "kind": "pull",
+  "labels": [],
+  "merge_commit_sha": "0ca1734b5076346b091da66fed8fac12cef5bc21",
+  "merged": true,
+  "milestone": null,
+  "number": 39,
+  "reviews": [],
+  "state": "closed",
+  "title": "chore(ci): copy the AI review from project-rules 64b857c",
+  "user": "cody"
  }
 ]
