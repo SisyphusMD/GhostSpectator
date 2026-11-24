@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+- Bring the AI review copy up to project-rules 72f8fcc (an answer cut off while still reasoning is asked once more under the answer schema) (#40).
 - Bring the AI review copy up to project-rules 64b857c (connect retry, malformed-answer re-ask, pinned checkout) (#38).
 - Prepare and review a release branch before tagging the verified merge (#28).
 - Forgejo pull requests get the standard project checks and a private vulnerability reporting
