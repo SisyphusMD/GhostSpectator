@@ -43,3 +43,5 @@ Generated nightly from the primary Forgejo; do not edit. `json/` holds the full 
 | 37 | pull | closed | [fix(ai-review): start a review from a PR comment only for pushers and the PR author](items/0037-fix-ai-review-start-a-review-from-a-pr-comment-only-for-push.md) |
 | 38 | issue | closed | [chore(ci): bring the AI review copy up to canonical project-rules 64b857c](items/0038-chore-ci-bring-the-ai-review-copy-up-to-canonical-project-ru.md) |
 | 39 | pull | closed | [chore(ci): copy the AI review from project-rules 64b857c](items/0039-chore-ci-copy-the-ai-review-from-project-rules-64b857c.md) |
+| 40 | issue | closed | [chore(ci): bring the AI review copy up to project-rules 72f8fcc](items/0040-chore-ci-bring-the-ai-review-copy-up-to-project-rules-72f8fc.md) |
+| 41 | pull | closed | [chore(ci): bring the AI review copy up to project-rules 72f8fcc](items/0041-chore-ci-bring-the-ai-review-copy-up-to-project-rules-72f8fc.md) |
