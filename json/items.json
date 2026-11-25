@@ -873,5 +873,57 @@
   "state": "closed",
   "title": "chore(ci): bring the AI review copy up to project-rules 72f8fcc",
   "user": "cody"
+ },
+ {
+  "assignees": [],
+  "body": "Decided on SisyphusMD/project-rules#78 (2026-11-24): every repo runs the gate scripts, and the AI review reads the rules, from project-rules main instead of its own copies. Switch `ci.yml` and `ai-review.yml` to canonical (project-rules af7417d1; this also brings in the canonical commenter gate where it was missing), and remove the four gate script copies and `.forgejo/RULES.md` in the same change. Where present, copy `mirror-lockdown.yml` again for its source header. issue-archive.py stays a copy.",
+  "closed_at": "2026-11-24T19:18:01-08:00",
+  "comments": [
+   {
+    "body": "Landed in #43 (6622c2d5). The next PR is the first run of the fetched scripts.",
+    "created_at": "2026-11-24T19:19:48-08:00",
+    "id": 46148,
+    "updated_at": "2026-11-24T19:19:48-08:00",
+    "user": "cody"
+   }
+  ],
+  "created_at": "2026-11-24T19:05:47-08:00",
+  "kind": "issue",
+  "labels": [
+   "status:in-progress",
+   "type:chore"
+  ],
+  "milestone": null,
+  "number": 42,
+  "state": "closed",
+  "title": "Run the gate scripts and rules from project-rules main",
+  "user": "cody"
+ },
+ {
+  "assignees": [],
+  "base": "main",
+  "body": "Closes #42\n\nThis repo ran its own copies of the gate scripts and kept a copy of the rules for the AI review, and copies drift. `ci.yml` and `ai-review.yml` now fetch the scripts and `RULES.md` from project-rules main on every run and fail when they cannot (SisyphusMD/project-rules#78). The gate jobs and `ai-review.yml` are project-rules main's (6a6d41b4), and the copies are removed in the same change, so no run is left without either.\n\nThe removed copies also leave ruff.toml's exclude list. mirror-lockdown.yml is copied again for its source header.\n\nLarge diff: 890 of the removed lines are the deleted copies, and the added workflow lines come from project-rules main, where they were reviewed and tested.\n",
+  "closed_at": "2026-11-24T19:18:00-08:00",
+  "comments": [
+   {
+    "body": "<!-- ai-review -->\n**AI review** of `2d39b6c4cb`: PR correctly implements the decision from project-rules#78: gate scripts and RULES.md are now fetched from project-rules main at runtime instead of using local copies, the copies are removed, and the workflows are updated to match the canonical versions. The large-diff justification is sound (most lines are deletions of files replaced by a fetch).\n\nNo findings.\n\nDisagree? Reply on this PR with your reasoning; the reviewer re-reads every reply.\n<!-- ai-review-state W10= -->",
+    "created_at": "2026-11-24T19:15:29-08:00",
+    "id": 46093,
+    "updated_at": "2026-11-24T19:15:29-08:00",
+    "user": "forgejo-actions"
+   }
+  ],
+  "created_at": "2026-11-24T19:11:30-08:00",
+  "head": "refs/pull/43/head",
+  "kind": "pull",
+  "labels": [],
+  "merge_commit_sha": "6622c2d58cd35e1c9cc4d6d7bd67c03d87fb92f3",
+  "merged": true,
+  "milestone": null,
+  "number": 43,
+  "reviews": [],
+  "state": "closed",
+  "title": "chore(gate): run the gate scripts and rules from project-rules main",
+  "user": "cody"
  }
 ]
