@@ -925,5 +925,57 @@
   "state": "closed",
   "title": "chore(gate): run the gate scripts and rules from project-rules main",
   "user": "cody"
+ },
+ {
+  "assignees": [],
+  "body": "Part of SisyphusMD/project-rules#78: this repo's ci.yml and ai-review.yml become small callers of project-rules main's gate.yml, gate-lint.yml and review.yml, proven in SisyphusMD/homebrew-tap#34, so the jobs stop being copies here. Check names stay the same.\n\nClaude has this.",
+  "closed_at": "2026-11-25T21:53:12-08:00",
+  "comments": [
+   {
+    "body": "Done in #45: ci.yml and ai-review.yml now call project-rules main's shared gate and review jobs, so only the small callers are copied here. Check names are unchanged; the next PR here is the first to run on the callers. Nothing left on this issue.",
+    "created_at": "2026-11-25T22:20:05-08:00",
+    "id": 47938,
+    "updated_at": "2026-11-25T22:20:05-08:00",
+    "user": "cody"
+   }
+  ],
+  "created_at": "2026-11-25T21:28:40-08:00",
+  "kind": "issue",
+  "labels": [
+   "status:in-progress",
+   "type:chore"
+  ],
+  "milestone": null,
+  "number": 44,
+  "state": "closed",
+  "title": "Call the shared gate and AI review workflows instead of copying them",
+  "user": "cody"
+ },
+ {
+  "assignees": [],
+  "base": "main",
+  "body": "Closes #44\n\n`ci.yml` and `ai-review.yml` carried copies of the gate and AI review jobs, and copies drift. They now call project-rules main's `gate.yml`, `gate-lint.yml` and `review.yml` (SisyphusMD/project-rules#78), as proven in SisyphusMD/homebrew-tap#34. They keep only the triggers, the concurrency groups and the one secret the jobs may see, `ISSUE_READ_TOKEN`. Check names stay the same; each calling job adds one check of its own (`CI / shared-gate` and so on), which nothing requires.\n\nThis PR is judged by the old copies, because `pull_request_target` runs main's files; the next PR here runs on the callers.\n\nNo tests: workflow wiring only, covered by project-rules' tests of the called files and the homebrew-tap proof run.",
+  "closed_at": "2026-11-25T21:53:12-08:00",
+  "comments": [
+   {
+    "body": "<!-- ai-review -->\n**AI review** of `edce741c4a`: Clean migration of ci.yml and ai-review.yml from inline job copies to reusable-workflow calls against project-rules main, following the proven homebrew-tap#34 pattern. Triggers, concurrency groups, and the one custom secret are correctly retained in the caller; the called workflows own the job logic. CHANGELOG updated, issue linked, no unrelated changes.\n\nNo findings.\n\nDisagree? Reply on this PR with your reasoning; the reviewer re-reads every reply.\n<!-- ai-review-state W10= -->",
+    "created_at": "2026-11-25T21:30:08-08:00",
+    "id": 47813,
+    "updated_at": "2026-11-25T21:38:32-08:00",
+    "user": "forgejo-actions"
+   }
+  ],
+  "created_at": "2026-11-25T21:28:41-08:00",
+  "head": "refs/pull/45/head",
+  "kind": "pull",
+  "labels": [],
+  "merge_commit_sha": "08e600238a5fff7fa769e7eba650a46b8dfd9b32",
+  "merged": true,
+  "milestone": null,
+  "number": 45,
+  "reviews": [],
+  "state": "closed",
+  "title": "chore(gate): call the shared gate and AI review workflows",
+  "user": "cody"
  }
 ]

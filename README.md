@@ -47,3 +47,5 @@ Generated nightly from the primary Forgejo; do not edit. `json/` holds the full 
 | 41 | pull | closed | [chore(ci): bring the AI review copy up to project-rules 72f8fcc](items/0041-chore-ci-bring-the-ai-review-copy-up-to-project-rules-72f8fc.md) |
 | 42 | issue | closed | [Run the gate scripts and rules from project-rules main](items/0042-run-the-gate-scripts-and-rules-from-project-rules-main.md) |
 | 43 | pull | closed | [chore(gate): run the gate scripts and rules from project-rules main](items/0043-chore-gate-run-the-gate-scripts-and-rules-from-project-rules.md) |
+| 44 | issue | closed | [Call the shared gate and AI review workflows instead of copying them](items/0044-call-the-shared-gate-and-ai-review-workflows-instead-of-copy.md) |
+| 45 | pull | closed | [chore(gate): call the shared gate and AI review workflows](items/0045-chore-gate-call-the-shared-gate-and-ai-review-workflows.md) |
