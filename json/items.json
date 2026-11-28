@@ -1004,5 +1004,76 @@
   "state": "closed",
   "title": "ci: map PROJECT_RULES_TOKEN into the shared jobs",
   "user": "cody"
+ },
+ {
+  "assignees": [],
+  "body": "project-rules now runs the issue-archive job from its main (SisyphusMD/project-rules#144). Replace this repo's .forgejo/workflows/issue-archive.yml with the new caller and delete .forgejo/scripts/issue-archive.py, which no longer runs and fell behind main.",
+  "closed_at": "2026-11-27T08:02:19-08:00",
+  "comments": [
+   {
+    "body": "Done: #48 merged and verified on main. Branch removed.",
+    "created_at": "2026-11-27T08:08:28-08:00",
+    "id": 50133,
+    "updated_at": "2026-11-27T08:08:28-08:00",
+    "user": "cody"
+   }
+  ],
+  "created_at": "2026-11-27T07:11:08-08:00",
+  "kind": "issue",
+  "labels": [
+   "status:in-progress",
+   "type:chore"
+  ],
+  "milestone": null,
+  "number": 47,
+  "state": "closed",
+  "title": "Call project-rules' shared issue-archive workflow",
+  "user": "cody"
+ },
+ {
+  "assignees": [],
+  "base": "main",
+  "body": "Replaces the copied issue-archive job with the caller from project-rules main and deletes the copied script, which no longer runs.\n\nCloses #47\n",
+  "closed_at": "2026-11-27T08:02:19-08:00",
+  "comments": [
+   {
+    "body": "<!-- ai-review -->\n**AI review** of `c0cf7f73d7`: Clean, focused PR that replaces the copied issue-archive job and script with a caller to project-rules' shared workflow, exactly as issue #47 specifies. The schedule, concurrency group, and secret passing are correctly retained in the caller; the CHANGELOG is updated per rule 10. No correctness, security, or test issues found.\n\nNo findings.\n\nDisagree? Reply on this PR with your reasoning; the reviewer re-reads every reply.\n<!-- ai-review-state W10= -->",
+    "created_at": "2026-11-27T07:14:42-08:00",
+    "id": 50006,
+    "updated_at": "2026-11-27T07:14:42-08:00",
+    "user": "forgejo-actions"
+   }
+  ],
+  "created_at": "2026-11-27T07:11:10-08:00",
+  "head": "refs/pull/48/head",
+  "kind": "pull",
+  "labels": [],
+  "merge_commit_sha": "45f23b0057ca12f4c609e2d194d892aa74d60162",
+  "merged": true,
+  "milestone": null,
+  "number": 48,
+  "reviews": [],
+  "state": "closed",
+  "title": "chore(ci): call the shared issue-archive workflow",
+  "user": "cody"
+ },
+ {
+  "assignees": [],
+  "base": "main",
+  "body": "Do not merge. Synthetic fixtures that deliberately fail the shared gate checks; the missing issue reference is part of the exercise. A second commit pins a caller to fail Copies match. Closed unmerged and the branch deleted once the statuses are recorded.",
+  "closed_at": "2026-11-27T21:58:42-08:00",
+  "comments": [],
+  "created_at": "2026-11-27T21:57:41-08:00",
+  "head": "refs/pull/49/head",
+  "kind": "pull",
+  "labels": [],
+  "merge_commit_sha": null,
+  "merged": false,
+  "milestone": null,
+  "number": 49,
+  "reviews": [],
+  "state": "closed",
+  "title": "WIP: Disposable draft to prove the shared gate checks",
+  "user": "cody"
  }
 ]

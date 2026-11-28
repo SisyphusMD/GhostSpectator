@@ -50,3 +50,6 @@ Generated nightly from the primary Forgejo; do not edit. `json/` holds the full 
 | 44 | issue | closed | [Call the shared gate and AI review workflows instead of copying them](items/0044-call-the-shared-gate-and-ai-review-workflows-instead-of-copy.md) |
 | 45 | pull | closed | [chore(gate): call the shared gate and AI review workflows](items/0045-chore-gate-call-the-shared-gate-and-ai-review-workflows.md) |
 | 46 | pull | closed | [ci: map PROJECT_RULES_TOKEN into the shared jobs](items/0046-ci-map-project-rules-token-into-the-shared-jobs.md) |
+| 47 | issue | closed | [Call project-rules' shared issue-archive workflow](items/0047-call-project-rules-shared-issue-archive-workflow.md) |
+| 48 | pull | closed | [chore(ci): call the shared issue-archive workflow](items/0048-chore-ci-call-the-shared-issue-archive-workflow.md) |
+| 49 | pull | closed | [WIP: Disposable draft to prove the shared gate checks](items/0049-wip-disposable-draft-to-prove-the-shared-gate-checks.md) |
